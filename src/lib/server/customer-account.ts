@@ -42,10 +42,11 @@ const cookieOptions = { path: '/', httpOnly: true, sameSite: 'lax' as const };
 
 /**
  * The public URL of this app, for OAuth redirects. Behind a tunnel or proxy the
- * request may look like plain http, so APP_ORIGIN can pin it.
+ * request may look like plain http, so ORIGIN can pin it. In production the
+ * Node server reads the same variable for its own cross-site checks.
  */
 export function appOrigin(url: URL) {
-	return (env.APP_ORIGIN || url.origin).replace(/\/$/, '');
+	return (env.ORIGIN || url.origin).replace(/\/$/, '');
 }
 
 // ---------- Login ----------

@@ -62,9 +62,12 @@ async function buildCatalog(): Promise<Catalog> {
 	const stockMaterials = toStockMaterials(products.filter((p) => p.productType === CNC_STOCK_TYPE && p.availableForSale));
 
 	const pva = filaments.find((p) => p.handle === solubleSupportHandle);
-	const pvaPrice = pva && minPrice(swatches(pva));
+	const pvaMaterial = pva && toMaterial(pva);
 	const supportInterfaces: SupportInterface[] = [supportInterfaceOptions.same];
-	if (pvaPrice !== undefined) supportInterfaces.push({ ...supportInterfaceOptions.soluble, pricePerGram: pvaPrice });
+	if (pvaMaterial) {
+		const { name, density, slicerPreset, pricePerGram, colors } = pvaMaterial;
+		supportInterfaces.push({ ...supportInterfaceOptions.soluble, pricePerGram, material: { name, density, slicerPreset, hex: colors[0].hex } });
+	}
 
 	return {
 		materialCategories,
@@ -122,8 +125,20 @@ function toMaterial(product: ShopifyProduct): Material | null {
 		inStock: colors.some((c) => c.inStock),
 		requiresEnclosure,
 		colors,
-		datasheetUrl: fields.technical_datasheet
+		datasheetUrl: fields.technical_datasheet,
+		slicerPreset: fields.orca_filament?.trim() || undefined,
+		nozzles: approvedNozzles(fields.approved_nozzles)
 	};
+}
+
+/** `custom.approved_nozzles` (a JSON list like ["0.4","0.6"]) as sizes; undefined when unset or unreadable. */
+function approvedNozzles(value: string | undefined): number[] | undefined {
+	try {
+		const sizes = (JSON.parse(value ?? '') as unknown[]).map(Number).filter((n) => Number.isFinite(n) && n > 0);
+		return sizes.length ? sizes : undefined;
+	} catch {
+		return undefined;
+	}
 }
 
 /** "Tensile: 39 MPa • Heat Deflect: 55°C • 1.24 g/cm³", from what the description states. */

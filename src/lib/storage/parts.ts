@@ -63,10 +63,15 @@ export type PartRecord = {
 
 export type StoredMesh = MeshData & { id: string };
 
-export async function createPart(part: PartRecord, mesh: MeshData): Promise<void> {
-	await transact([STORES.parts, STORES.meshes], 'readwrite', (tx) => {
+/** The original upload, as a file. */
+export type StoredSource = { id: string; file: File };
+
+/** Save a new part with its geometry, and its original upload when that's needed later (see `keepsSource`). */
+export async function createPart(part: PartRecord, mesh: MeshData, source?: File): Promise<void> {
+	await transact([STORES.parts, STORES.meshes, STORES.sources], 'readwrite', (tx) => {
 		tx.objectStore(STORES.parts).put(part);
 		tx.objectStore(STORES.meshes).put({ ...mesh, id: part.id } satisfies StoredMesh);
+		if (source) tx.objectStore(STORES.sources).put({ id: part.id, file: source } satisfies StoredSource);
 	});
 	notifyShelfChanged();
 }
@@ -105,6 +110,18 @@ export async function getMesh(id: string): Promise<StoredMesh | null> {
 	});
 }
 
+/** Formats whose original file is kept: CNC is machined from the STEP itself, not the preview mesh. */
+export function keepsSource(format: string) {
+	return format === 'step' || format === 'stp';
+}
+
+/** The part's original upload, if it was kept. */
+export async function getSource(id: string): Promise<File | null> {
+	return transact([STORES.sources], 'readonly', async (tx) => {
+		return ((await promisify(tx.objectStore(STORES.sources).get(id))) as StoredSource | undefined)?.file ?? null;
+	});
+}
+
 /** All parts, most recently edited first. Never loads meshes. */
 export async function listParts(): Promise<PartRecord[]> {
 	const parts = await transact([STORES.parts], 'readonly', (tx) =>
@@ -114,9 +131,10 @@ export async function listParts(): Promise<PartRecord[]> {
 }
 
 export async function deletePart(id: string): Promise<void> {
-	await transact([STORES.parts, STORES.meshes], 'readwrite', (tx) => {
+	await transact([STORES.parts, STORES.meshes, STORES.sources], 'readwrite', (tx) => {
 		tx.objectStore(STORES.parts).delete(id);
 		tx.objectStore(STORES.meshes).delete(id);
+		tx.objectStore(STORES.sources).delete(id);
 	});
 	notifyShelfChanged();
 }

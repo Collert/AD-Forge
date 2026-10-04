@@ -1,0 +1,46 @@
+# Nixpacks build for Dokploy: the SvelteKit app plus OrcaSlicer's command line for quotes.
+# See docs/slicer-scaling.md for how slicing works.
+
+[variables]
+# Keep in step with the OrcaSlicer you use on the desktop, so saved 3MF files open there cleanly.
+ORCA_VERSION = "2.4.2"
+ORCA_SLICER_PATH = "/opt/orca/squashfs-root/AppRun"
+ORCA_PROFILES_DIR = "/opt/orca/squashfs-root/resources/profiles"
+# Mount a persistent volume here: quotes (24 h) and every finalized 3MF live under it.
+DATA_DIR = "/app/data"
+# Largest request the server accepts (default 512K): quotes upload the STL, up to 100 MB.
+BODY_SIZE_LIMIT = "110M"
+
+[phases.setup]
+# Libraries the AppImage expects from the system (it bundles the rest). The command line
+# doesn't open a window, but the binary still links against GTK / WebKit / GL.
+aptPkgs = [
+	"...",
+	"wget",
+	"ca-certificates",
+	"libgtk-3-0",
+	"libwebkit2gtk-4.1-0",
+	"libgl1",
+	"libegl1",
+	"libglu1-mesa",
+	"libgstreamer1.0-0",
+	"libgstreamer-plugins-base1.0-0",
+	"libsecret-1-0",
+	"locales"
+]
+
+[phases.orca]
+dependsOn = ["setup"]
+cmds = [
+	"mkdir -p /opt/orca",
+	"wget -q -O /opt/orca/OrcaSlicer.AppImage https://github.com/OrcaSlicer/OrcaSlicer/releases/download/v${ORCA_VERSION}/OrcaSlicer_Linux_AppImage_Ubuntu2404_V${ORCA_VERSION}.AppImage",
+	"chmod +x /opt/orca/OrcaSlicer.AppImage",
+	# Containers have no FUSE, so unpack the AppImage instead of mounting it.
+	"cd /opt/orca && ./OrcaSlicer.AppImage --appimage-extract > /dev/null && rm OrcaSlicer.AppImage",
+	# Fail the build here, not on the first customer quote, if the paths or libraries are wrong.
+	"test -x \"$ORCA_SLICER_PATH\" && test -d \"$ORCA_PROFILES_DIR/BBL\"",
+	"\"$ORCA_SLICER_PATH\" --help > /dev/null"
+]
+
+[start]
+cmd = "node build"

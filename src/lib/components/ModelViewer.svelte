@@ -55,6 +55,8 @@
 		placeholder?: boolean;
 		/** Accept files dropped on the viewport / picked with the open button. */
 		allowDrop?: boolean;
+		/** File types the open button offers (input `accept`); every previewable format by default. */
+		accept?: string;
 		/** Allow rotating / scaling the part. */
 		editable?: boolean;
 		/** Show the toolbar, layer slider and chips. */
@@ -91,6 +93,7 @@
 		machining = false,
 		placeholder = true,
 		allowDrop = true,
+		accept = MODEL_ACCEPT,
 		editable = true,
 		hud = true,
 		layers = true,
@@ -667,109 +670,111 @@
 						<input
 							bind:this={fileInput}
 							type="file"
-							accept={MODEL_ACCEPT}
+							{accept}
 							hidden
 							onchange={(e) => takeFile(e.currentTarget.files)}
 						/>
 					{/if}
 				</div>
 			</div>
-		</div>
 
-		{#if editable && panel && analysis && unscaledSize}
-			<div class="panel" role="dialog" aria-label={panel === 'rotate' ? 'Rotate model' : 'Scale model'}>
-				{#if panel === 'rotate'}
-					<div class="panel-head">
-						<span class="panel-title"><span class="material-symbols-outlined">3d_rotation</span>Rotate</span>
-						<button class="panel-icon" title="Reset rotation" onclick={resetRotation}>
-							<span class="material-symbols-outlined">restart_alt</span>
-						</button>
-					</div>
-					{#each axes as axis (axis)}
-						<div class="axis-row">
-							<span class="axis-label {axis}">{axis}</span>
-							<button class="step-btn" title={`Rotate −90° around ${axis.toUpperCase()}`} onclick={() => setRotation(axis, transform.rotation[axis] - 90)}>−90</button>
-							<label class="num-field">
-								<input
-									type="number"
-									step="1"
-									value={transform.rotation[axis]}
-									onchange={(e) => setRotation(axis, num(e))}
-									aria-label={`${axis.toUpperCase()} rotation in degrees`}
-								/>
-								<span>°</span>
-							</label>
-							<button class="step-btn" title={`Rotate +90° around ${axis.toUpperCase()}`} onclick={() => setRotation(axis, transform.rotation[axis] + 90)}>+90</button>
-						</div>
-					{/each}
-					<button class="fit-btn" onclick={tryToFit} disabled={fitting}>
-						{#if fitting}
-							<span class="mini-spinner"></span>Searching orientations…
+			{#if editable && panel && analysis && unscaledSize}
+				<div class="panel-row">
+					<div class="panel" role="dialog" aria-label={panel === 'rotate' ? 'Rotate model' : 'Scale model'}>
+						{#if panel === 'rotate'}
+							<div class="panel-head">
+								<span class="panel-title"><span class="material-symbols-outlined">3d_rotation</span>Rotate</span>
+								<button class="panel-icon" title="Reset rotation" onclick={resetRotation}>
+									<span class="material-symbols-outlined">restart_alt</span>
+								</button>
+							</div>
+							{#each axes as axis (axis)}
+								<div class="axis-row">
+									<span class="axis-label {axis}">{axis}</span>
+									<button class="step-btn" title={`Rotate −90° around ${axis.toUpperCase()}`} onclick={() => setRotation(axis, transform.rotation[axis] - 90)}>−90</button>
+									<label class="num-field">
+										<input
+											type="number"
+											step="1"
+											value={transform.rotation[axis]}
+											onchange={(e) => setRotation(axis, num(e))}
+											aria-label={`${axis.toUpperCase()} rotation in degrees`}
+										/>
+										<span>°</span>
+									</label>
+									<button class="step-btn" title={`Rotate +90° around ${axis.toUpperCase()}`} onclick={() => setRotation(axis, transform.rotation[axis] + 90)}>+90</button>
+								</div>
+							{/each}
+							<button class="fit-btn" onclick={tryToFit} disabled={fitting}>
+								{#if fitting}
+									<span class="mini-spinner"></span>Searching orientations…
+								{:else}
+									<span class="material-symbols-outlined">fit_screen</span>Try to Fit Build Plate
+								{/if}
+							</button>
+							{#if fitStatus === 'already'}
+								<p class="fit-msg ok"><span class="material-symbols-outlined">check_circle</span>Already fits the {bed.x}×{bed.y}×{bed.z}mm volume.</p>
+							{:else if fitStatus === 'rotated'}
+								<p class="fit-msg ok"><span class="material-symbols-outlined">check_circle</span>Rotated to fit. Scale was not changed.</p>
+							{:else if fitStatus === 'impossible'}
+								<p class="fit-msg bad"><span class="material-symbols-outlined">error</span>No orientation fits at this scale. Scale it down or pick a larger machine.</p>
+							{:else}
+								<p class="fit-msg">Finds the closest rotation that fits the build volume. Never rescales.</p>
+							{/if}
 						{:else}
-							<span class="material-symbols-outlined">fit_screen</span>Try to Fit Build Plate
+							<div class="panel-head">
+								<span class="panel-title"><span class="material-symbols-outlined">open_in_full</span>Scale</span>
+								<div class="panel-actions">
+									<button
+										class="panel-icon"
+										class:on={scaleLocked}
+										title={scaleLocked ? 'Proportions locked' : 'Proportions unlocked'}
+										aria-pressed={scaleLocked}
+										onclick={() => (scaleLocked = !scaleLocked)}
+									>
+										<span class="material-symbols-outlined">{scaleLocked ? 'link' : 'link_off'}</span>
+									</button>
+									<button class="panel-icon" title="Reset scale" onclick={resetScale}>
+										<span class="material-symbols-outlined">restart_alt</span>
+									</button>
+								</div>
+							</div>
+							{#each axes as axis (axis)}
+								<div class="axis-row">
+									<span class="axis-label {axis}">{axis}</span>
+									<label class="num-field">
+										<input
+											type="number"
+											min="0.1"
+											step="1"
+											value={+(transform.scale[axis] * 100).toFixed(2)}
+											onchange={(e) => setScalePercent(axis, num(e))}
+											aria-label={`${axis.toUpperCase()} scale in percent`}
+										/>
+										<span>%</span>
+									</label>
+									<label class="num-field wide">
+										<input
+											type="number"
+											min="0.01"
+											step="0.1"
+											value={+(unscaledSize[axis] * transform.scale[axis]).toFixed(2)}
+											onchange={(e) => setSizeMm(axis, num(e))}
+											aria-label={`${axis.toUpperCase()} size in millimetres`}
+										/>
+										<span>mm</span>
+									</label>
+								</div>
+							{/each}
+							<div class="unit-row">
+								<button class="step-btn" title="Model was drawn in inches" onclick={() => multiplyScale(INCH_MM)}>in → mm</button>
+								<button class="step-btn" title="Undo an inch conversion" onclick={() => multiplyScale(1 / INCH_MM)}>mm → in</button>
+							</div>
 						{/if}
-					</button>
-					{#if fitStatus === 'already'}
-						<p class="fit-msg ok"><span class="material-symbols-outlined">check_circle</span>Already fits the {bed.x}×{bed.y}×{bed.z}mm volume.</p>
-					{:else if fitStatus === 'rotated'}
-						<p class="fit-msg ok"><span class="material-symbols-outlined">check_circle</span>Rotated to fit. Scale was not changed.</p>
-					{:else if fitStatus === 'impossible'}
-						<p class="fit-msg bad"><span class="material-symbols-outlined">error</span>No orientation fits at this scale. Scale it down or pick a larger machine.</p>
-					{:else}
-						<p class="fit-msg">Finds the closest rotation that fits the build volume. Never rescales.</p>
-					{/if}
-				{:else}
-					<div class="panel-head">
-						<span class="panel-title"><span class="material-symbols-outlined">open_in_full</span>Scale</span>
-						<div class="panel-actions">
-							<button
-								class="panel-icon"
-								class:on={scaleLocked}
-								title={scaleLocked ? 'Proportions locked' : 'Proportions unlocked'}
-								aria-pressed={scaleLocked}
-								onclick={() => (scaleLocked = !scaleLocked)}
-							>
-								<span class="material-symbols-outlined">{scaleLocked ? 'link' : 'link_off'}</span>
-							</button>
-							<button class="panel-icon" title="Reset scale" onclick={resetScale}>
-								<span class="material-symbols-outlined">restart_alt</span>
-							</button>
-						</div>
 					</div>
-					{#each axes as axis (axis)}
-						<div class="axis-row">
-							<span class="axis-label {axis}">{axis}</span>
-							<label class="num-field">
-								<input
-									type="number"
-									min="0.1"
-									step="1"
-									value={+(transform.scale[axis] * 100).toFixed(2)}
-									onchange={(e) => setScalePercent(axis, num(e))}
-									aria-label={`${axis.toUpperCase()} scale in percent`}
-								/>
-								<span>%</span>
-							</label>
-							<label class="num-field wide">
-								<input
-									type="number"
-									min="0.01"
-									step="0.1"
-									value={+(unscaledSize[axis] * transform.scale[axis]).toFixed(2)}
-									onchange={(e) => setSizeMm(axis, num(e))}
-									aria-label={`${axis.toUpperCase()} size in millimetres`}
-								/>
-								<span>mm</span>
-							</label>
-						</div>
-					{/each}
-					<div class="unit-row">
-						<button class="step-btn" title="Model was drawn in inches" onclick={() => multiplyScale(INCH_MM)}>in → mm</button>
-						<button class="step-btn" title="Undo an inch conversion" onclick={() => multiplyScale(1 / INCH_MM)}>mm → in</button>
-					</div>
-				{/if}
-			</div>
-		{/if}
+				</div>
+			{/if}
+		</div>
 
 		{#if layers && analysis && status === 'ready'}
 			<div class="layers">
@@ -1318,6 +1323,28 @@
 		}
 	}
 
+	/* Phones: the toolbar spans the viewer; view buttons share its first row, tools wrap below them. */
+	@media (max-width: 639px) {
+		.toolbar {
+			width: 100%;
+			flex-wrap: wrap;
+		}
+
+		.segmented {
+			flex: 1 1 auto;
+		}
+
+		.segmented button {
+			flex: 1;
+			padding: 2px 0.25rem;
+		}
+
+		.tools {
+			margin-left: auto;
+			flex-wrap: wrap;
+		}
+	}
+
 	/* ---------- Transform panel ---------- */
 	.tool.edited::after {
 		content: '';
@@ -1340,13 +1367,17 @@
 		background: var(--surface-container-highest);
 	}
 
+	/* A full row of the top HUD, so the panel opens below the toolbar however many rows that takes. */
+	.panel-row {
+		flex-basis: 100%;
+		display: flex;
+		pointer-events: none;
+	}
+
 	.panel {
-		position: absolute;
-		top: 3.5rem;
-		left: var(--space-md);
-		z-index: 3;
+		pointer-events: auto;
 		width: 15.5rem;
-		max-width: calc(100% - 2 * var(--space-md) - 4rem);
+		max-width: 100%;
 		padding: var(--space-sm);
 		display: flex;
 		flex-direction: column;

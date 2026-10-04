@@ -90,8 +90,33 @@ const back = new Vector3();
 const hitA = new Vector3();
 const hitB = new Vector3();
 
+/** Samples between pauses in `analyzeMachiningAsync` (~50 ms of ray tests). */
+const SAMPLES_PER_SLICE = 400;
+
 /** Expects a closed, outward-facing, non-indexed geometry in mm, Z up. */
 export function analyzeMachining(positions: Float32Array): MachiningProfile {
+	const steps = machiningSteps(positions);
+	let step = steps.next();
+	while (!step.done) step = steps.next();
+	return step.value;
+}
+
+/**
+ * The same analysis, awaiting `pause()` between slices of work, so a server
+ * can keep answering other requests while a large part is measured.
+ */
+export async function analyzeMachiningAsync(positions: Float32Array, pause: () => Promise<void>): Promise<MachiningProfile> {
+	const steps = machiningSteps(positions);
+	let step = steps.next();
+	while (!step.done) {
+		await pause();
+		step = steps.next();
+	}
+	return step.value;
+}
+
+/** The analysis, yielding after every slice of samples. */
+function* machiningSteps(positions: Float32Array): Generator<void, MachiningProfile> {
 	const geometry = new BufferGeometry();
 	geometry.setAttribute('position', new Float32BufferAttribute(positions, 3));
 	geometry.computeBoundingBox();
@@ -150,7 +175,8 @@ export function analyzeMachining(positions: Float32Array): MachiningProfile {
 	const floors: number[] = [];
 	const stride = Math.max(1, Math.ceil(triangles / MAX_SAMPLES));
 
-	for (let t = 0; t < triangles; t += stride) {
+	for (let t = 0, sample = 0; t < triangles; t += stride, sample++) {
+		if (sample % SAMPLES_PER_SLICE === SAMPLES_PER_SLICE - 1) yield;
 		a.fromArray(positions, t * 9);
 		b.fromArray(positions, t * 9 + 3);
 		c.fromArray(positions, t * 9 + 6);
@@ -194,6 +220,7 @@ export function analyzeMachining(positions: Float32Array): MachiningProfile {
 	}
 
 	geometry.dispose();
+	yield;
 	return {
 		access,
 		buriedArea,

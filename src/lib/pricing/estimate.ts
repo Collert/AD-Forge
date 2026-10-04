@@ -7,7 +7,6 @@ import type {
 	StockPiece,
 	InfillPattern,
 	Material,
-	PriceTier,
 	ProcessProfile,
 	Resin,
 	ResinProfile,
@@ -324,7 +323,7 @@ export function estimateMachining(
 
 	const materialCost = stock.price;
 	const machineCost = hours * rates.machineRate;
-	const setupFee = mode.setupFee * setups;
+	const setupFee = setupFeeFor(mode, setups);
 
 	return {
 		stock: { ...stock, removedCm3, setups },
@@ -339,6 +338,7 @@ export function estimateMachining(
 	};
 }
 
-export function tierUnitPrice(total: number, tier: PriceTier) {
-	return total * (1 - tier.discount);
+/** The first setup at its full fee, every further one at the additional-setup fee. */
+export function setupFeeFor(mode: AxisMode, setups: number) {
+	return mode.firstSetupFee + mode.additionalSetupFee * Math.max(0, setups - 1);
 }

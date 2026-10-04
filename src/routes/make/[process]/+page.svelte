@@ -14,8 +14,11 @@
 	import {
 		createPart,
 		createPartSaver,
+		deletePart,
 		getMesh,
 		getPart,
+		getSource,
+		keepsSource,
 		replaceMesh,
 		type PartConfig,
 		type MachiningConfig,
@@ -70,14 +73,15 @@
 		estimatePrint,
 		estimateResin,
 		resinPartMl,
-		tierUnitPrice,
 		type MachiningSettings,
 		type PrintCost,
 		type PrintSettings,
 		type ResinSettings,
 		type ResolvedOptions
 	} from '$lib/pricing/estimate';
-	import { requestQuote, type Quote } from '$lib/pricing/quote';
+	import { lowestUnitPrice, tierAmountOff, tierUnitPrice } from '$lib/pricing/tiers';
+	import { finalizeDesign, isOrderable, requestQuote, RequestError, type FinalizedDesign, type Quote } from '$lib/pricing/quote';
+	import { addToCart, cart, cartQuantity, markNewDesign } from '$lib/cart.svelte';
 
 	let { data } = $props();
 
@@ -148,6 +152,17 @@
 	let material = $derived<Material>({ ...baseMaterial, pricePerGram: color.price, inStock: color.inStock });
 	let colorHex = $derived(color.hex);
 	let quality = $derived(qualities.find((q) => q.id === qualityId)!);
+	/** Nozzle sizes the chosen filament is approved for. */
+	let allowedNozzles = $derived(material.nozzles ?? nozzles.map((n) => n.size));
+
+	// A filament that can't use the current nozzle moves it to the nearest size it can (0.4 on a tie).
+	$effect(() => {
+		const allowed = allowedNozzles;
+		const current = untrack(() => fdm.nozzle);
+		if (allowed.includes(current)) return;
+		const nearest = (n: number) => Math.abs(n - current) + Math.abs(n - defaults.nozzle) / 100;
+		fdm.nozzle = [...allowed].sort((a, b) => nearest(a) - nearest(b))[0];
+	});
 	let settings = $derived<PrintSettings>({ ...fdm, layerHeight: quality.layerHeight });
 
 	let options = $derived<ResolvedOptions>({
@@ -284,7 +299,28 @@
 	let quoteCurrent = $derived(quote !== null && quote.key === configKey);
 	let quoteStale = $derived(quote !== null && !quoteCurrent);
 	let pricing = $derived(quoteCurrent ? quote!.result : estimate);
-	let canQuote = $derived(!!source && !!info && fitsMachine && !quoting);
+	/** The original STEP upload, which CNC parts are machined from (kept with the part in browser storage). */
+	let stepFile = $state.raw<File | null>(null);
+	// A new upload brings its own STEP file (or none); a reopened part gets its stored one in `restore`.
+	$effect(() => {
+		const next = source;
+		untrack(() => {
+			if (next instanceof File) stepFile = keepsSource(formatOf(next)) ? next : null;
+			else if (!isStoredModel(next)) stepFile = null;
+		});
+	});
+	let scaled = $derived(transform.scale.x !== 1 || transform.scale.y !== 1 || transform.scale.z !== 1);
+	/** Why this CNC part can't be quoted yet, if it can't. */
+	let cncBlocker = $derived(
+		!isCnc || !info
+			? null
+			: !stepFile
+				? 'CNC machining needs the part’s STEP (.step / .stp) file. Upload it to get a quote.'
+				: scaled
+					? 'CNC parts are machined from your STEP file at its designed size. Reset the scale to 100% to get a quote.'
+					: null
+	);
+	let canQuote = $derived(!!source && !!info && fitsMachine && !quoting && !cncBlocker);
 
 	async function getQuote() {
 		if (!source || !estimate) return;
@@ -292,15 +328,20 @@
 		quoting = true;
 		quoteError = '';
 		try {
+			// The edited part as the viewer shows it (repaired, rotated, scaled), resting on the bed.
+			const model = await viewerRef?.exportModel();
+			if (!model) throw new Error('The model is still loading. Try again in a moment.');
 			const result = await requestQuote(
 				{
 					name: partName.trim() || baseName(info!.name),
-					source: repaired?.source ?? source,
-					transform: $state.snapshot(transform),
+					model,
 					processId,
+					processKind: process.kind,
 					materialId: isResin ? resin.id : isCnc ? stock.id : material.id,
-					colorHex: partColor,
-					settings: isResin ? resinSettings : isCnc ? machiningSettings : settings
+					colorId: isResin ? pigment.id : isCnc ? stock.id : color.id,
+					settings: isResin ? resinSettings : isCnc ? machiningSettings : settings,
+					source: isCnc ? stepFile : null,
+					transform: $state.snapshot(transform)
 				},
 				estimate
 			);
@@ -312,9 +353,130 @@
 		}
 	}
 
-	function confirmUpload() {
-		if (!quoteCurrent) return;
-		// TODO: create the order from quote.result.id once the orders API exists.
+	// ---------- Floating "Get Quote" shortcut ----------
+
+	/** The price card, watched so the shortcut hides while it's on screen. */
+	let quoteCard = $state<HTMLElement>();
+	let quoteCardVisible = $state(true);
+	$effect(() => {
+		const card = quoteCard;
+		if (!card) return;
+		const observer = new IntersectionObserver(([entry]) => (quoteCardVisible = entry.isIntersecting));
+		observer.observe(card);
+		return () => observer.disconnect();
+	});
+	/** Your own part, still without a current accurate quote, and the price card scrolled away. */
+	let showQuoteShortcut = $derived(!!source && !!info && !quoteCurrent && !quoteCardVisible);
+	/** The cart bar is showing at the bottom, so the shortcut sits just above it. */
+	let cartBarShown = $derived(cartQuantity() > 0 && !cart.open);
+
+	function scrollToQuote() {
+		quoteCard?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+	}
+
+	/** The phone-sized method dropdown at the top of the page. */
+	let methodSelect = $state<HTMLSelectElement>();
+
+	/** Scroll back up to the method dropdown and open it (where the browser allows opening it from script). */
+	function openMethodPicker() {
+		const select = methodSelect;
+		if (!select) return;
+		select.scrollIntoView({ behavior: 'smooth', block: 'start' });
+		try {
+			select.showPicker();
+		} catch {
+			select.focus({ preventScroll: true });
+		}
+	}
+
+	/** Same as tapping a method tile: keep the open part. */
+	function switchProcess(id: string) {
+		if (id !== processId) goto(`/make/${id}${partId ? `?part=${partId}` : ''}`, { noScroll: true, keepFocus: true });
+	}
+
+	/** Query flag on the sign-in return URL: confirm the restored quote automatically. */
+	const CONFIRM_PARAM = 'confirm';
+
+	/** Design created from a quote (by quote id), so confirming twice reuses it. */
+	let finalized = $state.raw<{ quoteId: string; design: FinalizedDesign } | null>(null);
+	let finalizing = $state(false);
+	let finalizeError = $state('');
+	let needsSignIn = $state(false);
+	let finalizedCurrent = $derived(quoteCurrent && finalized?.quoteId === quote!.result.id);
+	/** Signed in (or a guest the server accepts); otherwise Confirm signs in first. */
+	let canSave = $derived(data.canSave && !needsSignIn);
+	/** Quotes for this process can be ordered online. */
+	let orderable = $derived(isOrderable(process.kind));
+
+	/** Back to this part after signing in, with `confirm` set so the upload finishes by itself. */
+	let signInHref = $derived.by(() => {
+		const back = new URL(page.url);
+		if (partId) back.searchParams.set('part', partId);
+		back.searchParams.set(CONFIRM_PARAM, '1');
+		return `/account/login?returnTo=${encodeURIComponent(back.pathname + back.search)}`;
+	});
+
+	/** Save the part and its quote to this browser, then go sign in. */
+	async function signInToConfirm(event: MouseEvent) {
+		event.preventDefault();
+		await saver.flush();
+		location.href = signInHref;
+	}
+
+	// Back from signing in: once the part and its quote are restored, finish the upload once.
+	let autoConfirm = $state(untrack(() => page.url.searchParams.has(CONFIRM_PARAM)));
+	$effect(() => {
+		if (!autoConfirm || restoring || !partReady || !info) return;
+		autoConfirm = false;
+		untrack(() => {
+			const url = new URL(page.url);
+			url.searchParams.delete(CONFIRM_PARAM);
+			goto(url.pathname + url.search, { replaceState: true, noScroll: true, keepFocus: true });
+			if (quoteCurrent) confirmUpload();
+			else if (quote) finalizeError = 'Your settings changed since the quote. Get an updated quote, then confirm.';
+		});
+	});
+
+	/**
+	 * Save the quoted part as a design (its file and a store product), put it in
+	 * the cart, then show it under My Designs with the cart open. The draft leaves
+	 * the Shelf, since the finalized design replaces it.
+	 */
+	async function confirmUpload() {
+		if (!quoteCurrent || finalizing || !orderable) return;
+		const quoteId = quote!.result.id;
+		finalizing = true;
+		finalizeError = '';
+		needsSignIn = false;
+		try {
+			const design =
+				finalized?.quoteId === quoteId
+					? finalized.design
+					: await finalizeDesign(quoteId, partName.trim() || baseName(info!.name), (await viewerRef?.thumbnail()) ?? null);
+			finalized = { quoteId, design };
+			markNewDesign(design.variantId);
+			await addWhenListed(design.variantId);
+			if (partId) await deletePart(partId).catch((err) => console.error('Could not remove the finalized draft', err));
+			await goto('/library');
+			cart.open = true;
+		} catch (err) {
+			needsSignIn = err instanceof RequestError && err.status === 401;
+			finalizeError = (err as Error).message || "Couldn't save your design. Please try again.";
+		} finally {
+			finalizing = false;
+		}
+	}
+
+	/** A new product takes a few seconds to reach the storefront; retry the add until it does. */
+	async function addWhenListed(variantId: string) {
+		for (let attempt = 0; ; attempt++) {
+			try {
+				return await addToCart(variantId);
+			} catch (err) {
+				if (attempt >= 4) throw err;
+				await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)));
+			}
+		}
 	}
 
 	// ---------- Mesh repair ----------
@@ -366,6 +528,27 @@
 	let checks = $derived.by((): Check[] => {
 		if (!info || !estimate) return [];
 		const list: Check[] = [];
+
+		if (isCnc && source && !stepFile) {
+			list.push({
+				tone: 'error',
+				icon: 'description',
+				title: 'STEP File Required',
+				badge: 'Can’t Order',
+				detail: keepsSource(formatOf(source))
+					? 'This part was saved before CNC ordering, so its original STEP file wasn’t kept with it. Upload the STEP file again to get a quote.'
+					: `CNC machines are programmed from your CAD model, so ordering needs a STEP (.step / .stp) file. ${formatOf(source).toUpperCase()} files only carry a triangle mesh, so the estimate is a guide. Export a STEP file from your CAD software and upload it.`
+			});
+		} else if (isCnc && scaled) {
+			list.push({
+				tone: 'error',
+				icon: 'aspect_ratio',
+				title: 'Scaled Part',
+				badge: 'Can’t Order',
+				detail: 'CNC parts are machined straight from your STEP file, at the size it was designed. Reset the scale to 100%, or change the size in your CAD software and upload it again. Rotating is fine.',
+				action: { icon: 'restart_alt', label: 'Reset Scale', onclick: () => (transform = { ...transform, scale: { x: 1, y: 1, z: 1 } }) }
+			});
+		}
 
 		if (orientationFit === 'impossible') {
 			list.push({
@@ -515,7 +698,7 @@
 		if (tooFine >= fineDetailMinArea) {
 			const sla = processes.find((p) => p.id === fineDetailProcessId)!;
 			const slaLimit = sla.minFeature ?? 0;
-			const finestNozzle = Math.min(...nozzles.map((n) => n.size));
+			const finestNozzle = Math.min(...allowedNozzles);
 			const nozzleTip =
 				fdm.nozzle > finestNozzle && finestNozzle * profile.lineWidthFactor <= thinnest
 					? ` To stay on FDM, the ${finestNozzle.toFixed(1)} mm fine-detail nozzle can print them (slower).`
@@ -849,8 +1032,9 @@
 		restoreError = '';
 		partReady = false;
 		try {
-			const [part, mesh] = await Promise.all([getPart(id), getMesh(id)]);
+			const [part, mesh, original] = await Promise.all([getPart(id), getMesh(id), getSource(id)]);
 			if (!part || !mesh) throw new Error('This part is no longer on your shelf.');
+			stepFile = original;
 			applyConfig(part.config);
 			transform = structuredClone(part.transform);
 			quote = part.quote;
@@ -912,7 +1096,7 @@
 			updatedAt: now
 		};
 		try {
-			await createPart(record, mesh);
+			await createPart(record, mesh, keepsSource(record.format) ? loaded : undefined);
 		} catch (err) {
 			console.error('Could not save part', err);
 			return;
@@ -1076,8 +1260,20 @@
 
 <HelpDialog />
 
-<!-- Process selector ribbon -->
+<!-- Process selector ribbon: tiles on wider screens, a dropdown on phones -->
 <section class="ribbon">
+	<label class="process-select">
+		<span class="visually-hidden">Manufacturing method</span>
+		<span class="material-symbols-outlined process-icon">{process.icon}</span>
+		<select bind:this={methodSelect} value={processId} onchange={(e) => switchProcess(e.currentTarget.value)}>
+			{#each processes as p (p.id)}
+				<option value={p.id} disabled={p.comingSoon}>
+					{p.title} — {p.comingSoon ? 'Coming soon' : p.subtitle}
+				</option>
+			{/each}
+		</select>
+		<span class="material-symbols-outlined chevron">expand_more</span>
+	</label>
 	<div class="process-list">
 		{#each processes as p (p.id)}
 			{@const active = p.id === processId}
@@ -1114,6 +1310,7 @@
 			bind:info
 			bind:transform
 			bind:orientationFit
+			accept={isCnc ? '.step,.stp' : undefined}
 			color={partColor}
 			bed={machineBed}
 			{bedLabel}
@@ -1237,6 +1434,9 @@
 				<div>
 					<span class="caps primary-text">Slicer Controls</span>
 					<h2>{isResin ? 'Resin Print Configuration' : isCnc ? 'Machining Configuration' : 'Print Configuration'}</h2>
+					<button class="method-link" onclick={openMethodPicker}>
+						<span class="material-symbols-outlined">swap_horiz</span>{process.badge} · Change manufacturing method
+					</button>
 				</div>
 				{#if !isResin && !isCnc}
 					<div class="mode-switch" role="group" aria-label="Configuration mode">
@@ -1390,7 +1590,7 @@
 						{#if recommendedAxes === 'four' && !onRotary}
 							<span class="metric-accent">4-Axis Recommended</span>
 						{:else}
-							<span class="hint">{money(axisMode.setupFee)} / setup</span>
+							<span class="hint">{money(axisMode.firstSetupFee)} setup · +{money(axisMode.additionalSetupFee)} each extra</span>
 						{/if}
 					</div>
 					{@render choice(axisModes, axisMode.id, (id) => setAxes(id as AxisMode['id']))}
@@ -1609,7 +1809,7 @@
 			{/if}
 
 			<!-- Quote -->
-			<div class="quote" class:accurate={quoteCurrent}>
+			<div class="quote" class:accurate={quoteCurrent} bind:this={quoteCard}>
 				<div class="quote-head">
 					<span class="caps">Price</span>
 					{#if quoteCurrent}
@@ -1650,6 +1850,15 @@
 					<span>{quoteCurrent ? 'Quoted Total:' : 'Estimated Total:'}</span>
 					<span class="total" class:muted-total={!quoteCurrent}>{pricing ? approx(money(pricing.total)) : '—'} CAD</span>
 				</div>
+				{#if pricing}
+					{@const lowest = lowestUnitPrice(pricing.total, process.tierScale)}
+					{#if lowest}
+						<p class="as-low-as">
+							<span class="material-symbols-outlined">sell</span>
+							<span>As low as <strong>{approx(money(lowest.price))}</strong> each when you order {lowest.tier.label}</span>
+						</p>
+					{/if}
+				{/if}
 
 				<div class="quote-note" class:stale={quoteStale}>
 					<span class="material-symbols-outlined">{quoteCurrent ? 'check_circle' : quoteStale ? 'sync_problem' : 'info'}</span>
@@ -1667,11 +1876,33 @@
 				{#if quoteError}
 					<p class="quote-error"><span class="material-symbols-outlined">error</span>{quoteError}</p>
 				{/if}
+				{#if quoteCurrent && finalizeError}
+					<p class="quote-error">
+						<span class="material-symbols-outlined">error</span>
+						<span>{finalizeError}</span>
+					</p>
+				{/if}
 
-				{#if quoteCurrent}
-					<button class="btn-cta primary" onclick={confirmUpload}>
-						<span class="material-symbols-outlined">add_shopping_cart</span>Confirm &amp; Upload
+				{#if quoteCurrent && !canSave && !finalizedCurrent && orderable}
+					<a class="btn-cta primary" href={signInHref} onclick={signInToConfirm}>
+						<span class="material-symbols-outlined">login</span>Sign In &amp; Upload
+					</a>
+					<p class="cta-hint">Sign in or create a free account to order. We'll bring you straight back and finish the upload; your part and quote are kept.</p>
+				{:else if quoteCurrent}
+					<button class="btn-cta primary" disabled={finalizing || !orderable} onclick={confirmUpload}>
+						{#if finalizing}
+							<span class="btn-spinner"></span>Saving Your Design…
+						{:else if finalizedCurrent}
+							<span class="material-symbols-outlined">add_shopping_cart</span>Add Another to Cart
+						{:else}
+							<span class="material-symbols-outlined">add_shopping_cart</span>Confirm &amp; Upload
+						{/if}
 					</button>
+					{#if finalizedCurrent}
+						<p class="cta-hint">Saved to your <a href="/library">Library</a> and added to your cart.</p>
+					{:else if !orderable}
+						<p class="cta-hint">Online ordering for {process.title} is coming soon.</p>
+					{/if}
 				{:else}
 					<button class="btn-cta primary" disabled={!canQuote} onclick={getQuote}>
 						{#if quoting}
@@ -1682,6 +1913,8 @@
 					</button>
 					{#if info && !source}
 						<p class="cta-hint">This is a sample part — upload your own model to get a quote.</p>
+					{:else if cncBlocker}
+						<p class="cta-hint">{cncBlocker}</p>
 					{:else if info && !fitsMachine}
 						<p class="cta-hint">Model doesn't fit the {process.title} build envelope.</p>
 					{/if}
@@ -1711,8 +1944,8 @@
 									{tier.label}
 									{#if i === 0}<span class="current-badge">Current</span>{/if}
 								</td>
-								<td class="right">{pricing ? approx(money(tierUnitPrice(pricing.total, tier))) : '—'}</td>
-								<td class="center savings">{tier.discount ? `${tier.discount * 100}% off` : 'Base Rate'}</td>
+								<td class="right">{pricing ? approx(money(tierUnitPrice(pricing.total, tier, process.tierScale))) : '—'}</td>
+								<td class="center savings">{tier.amountOff ? `${money(tierAmountOff(tier, process.tierScale))} off each` : 'Base Rate'}</td>
 							</tr>
 						{/each}
 					</tbody>
@@ -1804,12 +2037,22 @@
 {#snippet nozzlePicker()}
 	<div class="options cols-4">
 		{#each nozzles as n (n.size)}
-			<button class="option" class:selected={fdm.nozzle === n.size} onclick={() => (fdm.nozzle = n.size)}>
+			{@const allowed = allowedNozzles.includes(n.size)}
+			<button
+				class="option"
+				class:selected={fdm.nozzle === n.size}
+				disabled={!allowed}
+				title={allowed ? undefined : `${material.name} can't be printed with a ${n.size.toFixed(1)} mm nozzle`}
+				onclick={() => (fdm.nozzle = n.size)}
+			>
 				<span class="option-title">{n.size.toFixed(1)} mm</span>
-				<span class="option-note">{n.note}</span>
+				<span class="option-note">{allowed ? n.note : 'Not for this material'}</span>
 			</button>
 		{/each}
 	</div>
+	{#if allowedNozzles.length < nozzles.length}
+		<span class="help">{material.name} prints with {allowedNozzles.map((n) => n.toFixed(1)).join(' / ')} mm nozzles only.</span>
+	{/if}
 {/snippet}
 
 {#snippet infillDensity()}
@@ -1874,6 +2117,14 @@
 	</div>
 {/snippet}
 
+{#if showQuoteShortcut}
+	<button class="quote-shortcut" class:above-cart={cartBarShown} onclick={scrollToQuote}>
+		<span class="material-symbols-outlined">bolt</span>
+		{quoteStale ? 'Update Quote' : 'Get Quote'}
+		{#if estimate}<span class="shortcut-estimate">≈ {money(estimate.total)}</span>{/if}
+	</button>
+{/if}
+
 <style>
 	/* ---------- Shared text styles ---------- */
 	.caps {
@@ -1922,8 +2173,45 @@
 		box-shadow: var(--shadow-sm);
 	}
 
-	.process-list {
+	.process-select {
+		position: relative;
 		display: flex;
+		align-items: center;
+	}
+
+	.process-select .process-icon {
+		position: absolute;
+		left: var(--space-md);
+		color: var(--primary);
+		pointer-events: none;
+	}
+
+	.process-select select {
+		padding: var(--space-sm) 2.25rem var(--space-sm) 2.75rem;
+		border-radius: var(--radius-lg);
+		background: var(--surface-container-lowest);
+		box-shadow: var(--shadow-sm);
+		font-family: var(--font-sans);
+		font-size: 15px;
+		line-height: 20px;
+		font-weight: 600;
+	}
+
+	.process-select .chevron {
+		right: var(--space-md);
+	}
+
+	.visually-hidden {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip: rect(0 0 0 0);
+		white-space: nowrap;
+	}
+
+	.process-list {
+		display: none;
 		align-items: center;
 		gap: var(--space-xs);
 		overflow-x: auto;
@@ -2701,7 +2989,7 @@
 		transition: background-color 0.15s ease;
 	}
 
-	.option:hover {
+	.option:hover:not(:disabled) {
 		background: var(--surface-container-high);
 	}
 
@@ -2827,6 +3115,23 @@
 		height: 1px;
 		margin: 0.125rem 0;
 		background: var(--surface-container-highest);
+	}
+
+	.as-low-as {
+		margin-top: calc(-1 * var(--space-xs));
+		display: flex;
+		align-items: center;
+		gap: 0.375rem;
+		padding: var(--space-xs) var(--space-sm);
+		border-radius: var(--radius-md);
+		background: var(--secondary-tint);
+		color: var(--on-secondary-container);
+		font-size: 12px;
+		line-height: 16px;
+	}
+
+	.as-low-as .material-symbols-outlined {
+		font-size: 16px;
 	}
 
 	.quote-total {
@@ -2992,6 +3297,10 @@
 		transition:
 			background-color 0.15s ease,
 			transform 0.1s ease;
+	}
+
+	a.btn-cta {
+		text-decoration: none;
 	}
 
 	.btn-cta .material-symbols-outlined {
@@ -3386,6 +3695,96 @@
 		cursor: not-allowed;
 	}
 
+	/* Floating shortcut to the price card: where the cart bar sits, or just above it when that's showing. */
+	.quote-shortcut {
+		--base: calc(var(--space-lg) + env(safe-area-inset-bottom, 0px));
+		position: fixed;
+		left: 50%;
+		bottom: var(--base);
+		z-index: 40;
+		transform: translate(-50%, -50%);
+		display: flex;
+		align-items: center;
+		gap: 0.375rem;
+		padding: var(--space-sm) var(--space-lg);
+		border-radius: var(--radius-full);
+		background: var(--primary);
+		color: var(--on-primary);
+		box-shadow: var(--shadow-md);
+		font-family: var(--font-mono);
+		font-size: 12px;
+		line-height: 18px;
+		font-weight: 600;
+		letter-spacing: 0.04em;
+		white-space: nowrap;
+		animation: shortcut-in 0.2s ease-out;
+	}
+
+	.quote-shortcut.above-cart {
+		bottom: calc(var(--base) + 3.5rem);
+	}
+
+	.quote-shortcut:hover {
+		background: var(--primary-container);
+	}
+
+	.quote-shortcut .material-symbols-outlined {
+		font-size: 18px;
+	}
+
+	.shortcut-estimate {
+		padding-left: 0.375rem;
+		border-left: 1px solid rgb(255 255 255 / 0.35);
+		font-weight: 500;
+		opacity: 0.85;
+	}
+
+	@keyframes shortcut-in {
+		from {
+			opacity: 0;
+			transform: translate(-50%, 0.5rem);
+		}
+	}
+
+	/* Same spot as the phone-sized cart bar. */
+	@media (max-width: 640px) {
+		.quote-shortcut {
+			--base: calc(var(--space-xl) + env(safe-area-inset-bottom, 0px));
+		}
+	}
+
+	/* Phones: title, method link and Simple / Advanced each get their own row. */
+	@media (max-width: 767px) {
+		.config-head {
+			flex-direction: column;
+			align-items: stretch;
+		}
+
+		.mode-switch button {
+			flex: 1;
+			padding-block: 0.375rem;
+		}
+	}
+
+	/* Phones only: the method dropdown is scrolled out of sight by the time you reach the settings. */
+	.method-link {
+		white-space: nowrap;
+		margin-top: 0.25rem;
+		align-self: flex-start;
+		display: flex;
+		align-items: center;
+		gap: 0.25rem;
+		font-family: var(--font-mono);
+		font-size: 11px;
+		font-weight: 600;
+		letter-spacing: 0.04em;
+		color: var(--primary);
+	}
+
+	.method-link .material-symbols-outlined {
+		font-size: 16px;
+	}
+
 	.reset-link {
 		align-self: center;
 		display: flex;
@@ -3474,6 +3873,15 @@
 	}
 
 	@media (min-width: 768px) {
+		.process-select,
+		.method-link {
+			display: none;
+		}
+
+		.process-list {
+			display: flex;
+		}
+
 		.metric-strip {
 			grid-template-columns: repeat(3, 1fr);
 		}

@@ -6,9 +6,15 @@
 		icon: string;
 		title: string;
 		description: string;
+		/** Configurator the card opens, `/make/<processId>`. */
+		processId?: string;
+		/** Lowest unit price with the biggest volume discount. */
 		price?: string;
 		comingSoon?: boolean;
 	};
+
+	/** The store's other (non-configurator) services. */
+	const MORE_SERVICES_URL = 'https://adbits.ca/collections/services';
 
 	const services: Service[] = [
 		{
@@ -16,35 +22,39 @@
 			title: 'Standard 3D Printing (FDM)',
 			description:
 				'Great for rapid prototypes, cosplay props, replacement brackets, and sturdy everyday parts. (PLA, PETG, ABS).',
-			price: 'From $12'
+			processId: 'fdm',
+			price: 'From $0.50'
 		},
 		{
 			icon: 'aspect_ratio',
 			title: 'Large-Scale 3D Printing',
 			description:
-				'For big ideas, helmets, sculptures, and life-size models up to 1 meter in one solid piece without messy seams.',
-			price: 'From $85'
+				'For big ideas, helmets, sculptures, and life-size models up to 450 mm in one solid piece without messy seams.',
+			processId: 'large-fdm',
+			price: 'From $0.50'
 		},
 		{
 			icon: 'water_drop',
 			title: 'Ultra-Detailed Resin (SLA)',
 			description:
 				'Glass-smooth finish and microscopic detail for figurines, miniatures, jewelry masters, and fine art pieces.',
-			price: 'From $28'
+			processId: 'sla',
+			price: 'From $3'
 		},
 		{
 			icon: 'precision_manufacturing',
 			title: 'CNC Metal & Wood Machining',
 			description:
 				'Heavy-duty custom parts milled from solid aluminum, brass, or engineering plastics for precision mechanical projects.',
-			price: 'From $64'
+			processId: 'cnc',
+			price: 'From $5'
 		},
 		{
 			icon: 'memory',
 			title: 'Custom PCB & Electronics',
 			description:
 				'Clean circuit boards and assembly for DIY IoT, custom keyboards, synthesizers, and robotics.',
-			price: 'From $18'
+			comingSoon: true
 		},
 		{
 			icon: 'blur_linear',
@@ -105,15 +115,13 @@
 <!-- Hero & CAD dropzone -->
 <section class="hero" id="quote">
 	<div class="hero-inner">
-		<div class="pill">
-			<span class="pulse-dot"></span>
-			<span>Ready for Prints, Cuts &amp; Prototypes</span>
+		<div class="hero-text">
+			<h1>Turn Your Files into <span class="accent">Real Things.</span></h1>
+			<p class="lead">
+				Fast, reliable 3D printing, CNC, and custom making — built for hobbyists, artists, and
+				engineers alike. No minimum orders, upfront pricing, and friendly support.
+			</p>
 		</div>
-		<h1>Turn Your Files into <span class="accent">Real Things.</span></h1>
-		<p class="lead">
-			Fast, reliable 3D printing, CNC, and custom making — built for hobbyists, artists, and
-			engineers alike. No minimum orders, upfront pricing, and friendly support.
-		</p>
 
 		<div class="upload-card">
 			<div
@@ -193,23 +201,24 @@
 						<p class="muted">{service.description}</p>
 					</div>
 					<div class="service-foot">
-						{#if service.comingSoon}
-							<span class="early">Early Access</span>
-							<button class="card-link teal-link">
-								<span>Notify me</span>
-								<span class="material-symbols-outlined icon-16">arrow_forward</span>
-							</button>
+						{#if service.comingSoon || !service.processId}
+							<span class="early">Not available to order yet</span>
 						{:else}
 							<span class="price">{service.price}</span>
-							<button class="card-link" onclick={() => fileInput?.click()}>
+							<a class="card-link" href={`/make/${service.processId}`}>
 								<span>Make with this</span>
 								<span class="material-symbols-outlined icon-16">arrow_forward</span>
-							</button>
+							</a>
 						{/if}
 					</div>
 				</div>
 			{/each}
 		</div>
+
+		<a class="more-services" href={MORE_SERVICES_URL}>
+			<span>More Services</span>
+			<span class="material-symbols-outlined icon-18">arrow_forward</span>
+		</a>
 	</div>
 </section>
 
@@ -286,52 +295,32 @@
 		background: var(--surface);
 	}
 
+	/* Stacked on mobile; from 1024px the text and trust badges sit left of the upload card. */
 	.hero-inner {
 		max-width: 56rem;
 		margin: 0 auto;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
+		display: grid;
+		grid-template-areas: 'text' 'upload' 'trust';
+		justify-items: center;
 		text-align: center;
 		gap: var(--space-lg);
 	}
 
-	.pill {
-		display: inline-flex;
+	.hero-text {
+		grid-area: text;
+		display: flex;
+		flex-direction: column;
 		align-items: center;
-		gap: 0.5rem;
-		padding: 0.25rem var(--space-md);
-		border-radius: var(--radius-full);
-		background: var(--secondary-container);
-		color: var(--on-secondary-container);
-		font-family: var(--font-mono);
-		font-size: 12px;
-		line-height: 14px;
-		font-weight: 600;
-		letter-spacing: 0.06em;
+		gap: var(--space-lg);
 	}
 
-	.pulse-dot,
 	.ping-dot {
 		width: 0.5rem;
 		height: 0.5rem;
 		border-radius: 50%;
 		background: var(--secondary);
 		flex-shrink: 0;
-	}
-
-	.pulse-dot {
-		animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-	}
-
-	.ping-dot {
 		animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
-	}
-
-	@keyframes pulse {
-		50% {
-			opacity: 0.5;
-		}
 	}
 
 	@keyframes ping {
@@ -363,6 +352,7 @@
 	}
 
 	.upload-card {
+		grid-area: upload;
 		width: 100%;
 		max-width: 42rem;
 		margin-top: var(--space-sm);
@@ -480,6 +470,7 @@
 	}
 
 	.trust {
+		grid-area: trust;
 		margin-top: var(--space-xs);
 		display: flex;
 		flex-wrap: wrap;
@@ -634,13 +625,26 @@
 		color: var(--primary-container);
 	}
 
-	.card-link.teal-link {
-		color: var(--secondary);
+	.more-services {
+		align-self: center;
+		display: inline-flex;
+		align-items: center;
+		gap: var(--space-xs);
+		padding: var(--space-sm) var(--space-lg);
+		border: 1px solid var(--primary);
+		border-radius: var(--radius-md);
+		color: var(--primary);
+		font-size: 14px;
+		font-weight: 600;
+		text-decoration: none;
+		transition:
+			background-color 0.15s ease,
+			color 0.15s ease;
 	}
 
-	.card-link.teal-link:hover {
-		color: var(--secondary);
-		text-decoration: underline;
+	.more-services:hover {
+		background: var(--primary);
+		color: var(--on-primary);
 	}
 
 	/* ---------- How it works ---------- */
@@ -787,6 +791,33 @@
 	@media (min-width: 1024px) {
 		.service-grid {
 			grid-template-columns: repeat(3, 1fr);
+		}
+
+		.hero-inner {
+			max-width: 80rem;
+			grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+			/* Empty rows above and below centre the text and badges, together, beside the card. */
+			grid-template-rows: 1fr auto auto 1fr;
+			grid-template-areas: '. upload' 'text upload' 'trust upload' '. upload';
+			row-gap: 0;
+			column-gap: var(--space-xl);
+			align-items: center;
+			justify-items: start;
+			text-align: left;
+		}
+
+		.hero-text {
+			align-items: flex-start;
+		}
+
+		.trust {
+			margin-top: var(--space-lg);
+			justify-content: flex-start;
+		}
+
+		.upload-card {
+			max-width: none;
+			margin-top: 0;
 		}
 	}
 </style>

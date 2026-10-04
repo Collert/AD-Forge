@@ -4,12 +4,14 @@
  * Stores:
  * - `parts`  — small part records (settings, summary, thumbnail). Listed by the Shelf.
  * - `meshes` — heavy geometry, keyed by part id. Only read when a part is opened.
+ * - `sources` — the original upload, keyed by part id, kept only where the mesh
+ *   isn't enough (STEP files, which CNC orders are machined from).
  */
 
 const DB_NAME = 'ad-forge';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
-export const STORES = { parts: 'parts', meshes: 'meshes' } as const;
+export const STORES = { parts: 'parts', meshes: 'meshes', sources: 'sources' } as const;
 type StoreName = (typeof STORES)[keyof typeof STORES];
 
 let dbPromise: Promise<IDBDatabase> | null = null;
@@ -26,6 +28,9 @@ export function openDb(): Promise<IDBDatabase> {
 			}
 			if (!db.objectStoreNames.contains(STORES.meshes)) {
 				db.createObjectStore(STORES.meshes, { keyPath: 'id' });
+			}
+			if (!db.objectStoreNames.contains(STORES.sources)) {
+				db.createObjectStore(STORES.sources, { keyPath: 'id' });
 			}
 		};
 		request.onsuccess = () => resolve(request.result);

@@ -4,11 +4,13 @@
  * are unlisted and the Storefront API can neither list them nor filter by
  * metafield.
  *
- * TODO(backend): move this to your own backend and call it from here. The
- * Admin token must never reach the browser. Until SHOPIFY_ADMIN_TOKEN is set,
- * no finalized designs are listed.
+ * The Admin token must never reach the browser. Until SHOPIFY_ADMIN_TOKEN is
+ * set, no finalized designs are listed or created. Creating them needs the
+ * write_products and write_publications scopes.
  */
 import { env } from '$env/dynamic/private';
+import { env as publicEnv } from '$env/dynamic/public';
+import { processes } from '$lib/catalog/config';
 
 const ADMIN_API_VERSION = '2026-07';
 
@@ -88,6 +90,12 @@ export async function getFinalizedDesigns(email: string): Promise<DesignsResult>
 
 	try {
 		const products = await fetchOwnedProducts(email);
+		// Product search lags a little behind new products: fetch the customer's newest ones directly.
+		const missing = (recentlyCreated.get(email) ?? []).filter((r) => Date.now() - r.at < SEARCH_LAG_MS && !products.some((p) => p.id === r.id));
+		for (const { id } of missing) {
+			const { product } = await admin<{ product: AdminProduct | null }>(`query Design($id: ID!) { product(id: $id) { ${PRODUCT_FIELDS} } }`, { id });
+			if (product) products.unshift(product);
+		}
 		const designs = products.filter((p) => p.status !== 'DRAFT' && ownedBy(p, email)).map(toDesign);
 		cache.set(email, { at: Date.now(), designs });
 		return { ok: true, designs };
@@ -96,6 +104,11 @@ export async function getFinalizedDesigns(email: string): Promise<DesignsResult>
 		return { ok: false, reason: 'error', designs: [] };
 	}
 }
+
+/** How long a new product may be missing from product search. */
+const SEARCH_LAG_MS = 10 * 60_000;
+/** Designs created by this server recently, by owner, so the Library shows them before search catches up. */
+const recentlyCreated = new Map<string, { id: string; at: number }[]>();
 
 /** Forget a customer's cached list, e.g. after extending a design. */
 export function invalidateDesigns(email: string) {
@@ -108,8 +121,6 @@ export type RenewResult = { ok: true; design: FinalizedDesign } | { ok: false; s
  * Restart a design's retention clock: it is kept for RETENTION_DAYS from today.
  * Sets `custom.last_interaction` to today rather than adding time, so renewing
  * repeatedly can't push the date further out.
- *
- * TODO(backend): move this to your own backend with the rest of the Admin API calls.
  */
 export async function renewDesign(email: string, productId: string): Promise<RenewResult> {
 	if (!env.SHOPIFY_ADMIN_DOMAIN || !env.SHOPIFY_ADMIN_TOKEN) return { ok: false, status: 503, message: 'Renewing designs is not available right now.' };
@@ -133,6 +144,184 @@ export async function renewDesign(email: string, productId: string): Promise<Ren
 	invalidateDesigns(email);
 	const others = product.metafields.nodes.filter((m) => m.key !== 'last_interaction');
 	return { ok: true, design: toDesign({ ...product, metafields: { nodes: [...others, { key: 'last_interaction', value: today }] } }) };
+}
+
+/** A `custom` metafield of a new design. */
+export type DesignField = { key: string; value: string; type: string };
+
+export type NewDesign = {
+	email: string;
+	name: string;
+	/** Stored model's file name (.3mf for FDM, .pwscene for SLA, .step for CNC). */
+	fileName: string;
+	/** Configurator process id; stored as `custom.manufacturing_method` (its badge: "FDM", "SLA"…) and picks the category. */
+	processId: string;
+	/** "PETG HF - Red", "6061 Aluminum". */
+	material: string;
+	/** The method's own settings (layer height, infill, stock, setups…). */
+	details: DesignField[];
+	/** Part weight, g. */
+	grams: number;
+	/** $ per unit. */
+	price: number;
+	/** PNG preview for the product image. */
+	thumbnail: Uint8Array<ArrayBuffer> | null;
+	/** Heavy meshes are checked by hand before their first print. */
+	manualReview: boolean;
+};
+
+/**
+ * Product category by process kind. Printed parts are a print service; Shopify
+ * has no machining-service category, so machined parts go under Manufacturing.
+ */
+const DESIGN_CATEGORIES: Record<string, string> = {
+	extrusion: 'gid://shopify/TaxonomyCategory/se-3-3-1', // Services > Business Services > Office Services > Printing & Custom Print Services
+	resin: 'gid://shopify/TaxonomyCategory/se-3-3-1',
+	machining: 'gid://shopify/TaxonomyCategory/bi-17' // Business & Industrial > Manufacturing
+};
+
+/**
+ * Create the unlisted store product a customer orders a finalized design
+ * through: owned by them (`custom.owner`), priced at the quote, weighed for
+ * shipping, and published to the storefront channel so the cart can add it.
+ */
+export async function createDesign(design: NewDesign): Promise<{ id: string; handle: string; variantId: string }> {
+	if (!env.SHOPIFY_ADMIN_DOMAIN || !env.SHOPIFY_ADMIN_TOKEN) throw new Error('SHOPIFY_ADMIN_DOMAIN and SHOPIFY_ADMIN_TOKEN must be set.');
+	const process = processes.find((p) => p.id === design.processId);
+	if (!process) throw new Error(`Unknown process ${design.processId}`);
+
+	// A missing preview shouldn't lose the order.
+	const image =
+		design.thumbnail &&
+		(await uploadImage(design.thumbnail, `${design.fileName.replace(/\.\w+$/, '')}.png`).catch((err) => {
+			console.error('Could not upload the design preview', err);
+			return null;
+		}));
+	const today = new Date().toISOString().slice(0, 10);
+	const text = (key: string, value: string) => ({ namespace: 'custom', key, value, type: 'single_line_text_field' });
+
+	type Created = { productCreate: { product: { id: string; handle: string; variants: { nodes: { id: string }[] } } | null; userErrors: { message: string }[] } };
+	const { productCreate } = await admin<Created>(
+		`mutation Create($product: ProductCreateInput!, $media: [CreateMediaInput!]) {
+			productCreate(product: $product, media: $media) {
+				product { id handle variants(first: 1) { nodes { id } } }
+				userErrors { message }
+			}
+		}`,
+		{
+			product: {
+				title: design.name,
+				handle: `${slug(design.name)}-${slug(design.email.split('@')[0])}-${crypto.randomUUID().slice(0, 8)}`,
+				descriptionHtml: '<p><strong>Custom 3D printed product</strong></p><p>This is a custom 3D printed item created specifically for you.</p>',
+				vendor: 'AD-Customs',
+				status: 'UNLISTED',
+				category: DESIGN_CATEGORIES[process.kind],
+				tags: design.manualReview ? ['manual-review'] : [],
+				metafields: [
+					text('owner', design.email),
+					text('file_name', design.fileName),
+					text('print_material', design.material),
+					text('manufacturing_method', process.badge),
+					...design.details.map((field) => ({ namespace: 'custom', ...field })),
+					{ namespace: 'custom', key: 'added_date', value: today, type: 'date' },
+					// Starts the retention clock (see RETENTION_DAYS).
+					{ namespace: 'custom', key: 'last_interaction', value: today, type: 'date' }
+				]
+			},
+			media: image ? [{ originalSource: image, mediaContentType: 'IMAGE', alt: `3D render of ${design.name}` }] : []
+		}
+	);
+	const product = productCreate.product;
+	if (!product || productCreate.userErrors.length) throw new Error(`Shopify productCreate: ${productCreate.userErrors.map((e) => e.message).join('; ')}`);
+	const variantId = product.variants.nodes[0]?.id;
+	if (!variantId) throw new Error(`Shopify created ${product.id} without a variant`);
+
+	type Updated = { productVariantsBulkUpdate: { userErrors: { message: string }[] } };
+	const { productVariantsBulkUpdate } = await admin<Updated>(
+		`mutation Price($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
+			productVariantsBulkUpdate(productId: $productId, variants: $variants) { userErrors { message } }
+		}`,
+		{
+			productId: product.id,
+			variants: [
+				{
+					id: variantId,
+					price: design.price.toFixed(2),
+					inventoryPolicy: 'CONTINUE',
+					inventoryItem: { tracked: false, requiresShipping: true, measurement: { weight: { value: Math.max(1, Math.round(design.grams)), unit: 'GRAMS' } } }
+				}
+			]
+		}
+	);
+	if (productVariantsBulkUpdate.userErrors.length) {
+		throw new Error(`Shopify productVariantsBulkUpdate: ${productVariantsBulkUpdate.userErrors.map((e) => e.message).join('; ')}`);
+	}
+
+	if (env.SHOPIFY_STOREFRONT_PUBLICATION_ID) {
+		type Published = { publishablePublish: { userErrors: { message: string }[] } };
+		const { publishablePublish } = await admin<Published>(
+			`mutation Publish($id: ID!, $input: [PublicationInput!]!) { publishablePublish(id: $id, input: $input) { userErrors { message } } }`,
+			{ id: product.id, input: [{ publicationId: env.SHOPIFY_STOREFRONT_PUBLICATION_ID }] }
+		);
+		if (publishablePublish.userErrors.length) throw new Error(`Shopify publishablePublish: ${publishablePublish.userErrors.map((e) => e.message).join('; ')}`);
+		await waitForStorefront(variantId);
+	}
+
+	const recent = (recentlyCreated.get(design.email) ?? []).filter((r) => Date.now() - r.at < SEARCH_LAG_MS);
+	recentlyCreated.set(design.email, [...recent, { id: product.id, at: Date.now() }]);
+	invalidateDesigns(design.email);
+	return { id: product.id, handle: product.handle, variantId };
+}
+
+/**
+ * A newly published product takes a few seconds to reach the Storefront API.
+ * Until it does, the variant resolves but its product is null, and a cart
+ * holding it fails every query ("Cannot return null for non-nullable field
+ * ProductVariant.product"). So don't hand it to the cart before then.
+ */
+async function waitForStorefront(variantId: string, timeoutMs = 30_000) {
+	const query = `query($id: ID!) { node(id: $id) { ... on ProductVariant { product { id } } } }`;
+	const deadline = Date.now() + timeoutMs;
+	while (Date.now() < deadline) {
+		try {
+			const res = await fetch(`https://${publicEnv.PUBLIC_SHOPIFY_STORE_DOMAIN}/api/${ADMIN_API_VERSION}/graphql.json`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json', 'X-Shopify-Storefront-Access-Token': publicEnv.PUBLIC_SHOPIFY_STOREFRONT_TOKEN ?? '' },
+				body: JSON.stringify({ query, variables: { id: variantId } }),
+				signal: AbortSignal.timeout(10_000)
+			});
+			const body: { data?: { node: { product: { id: string } } | null } } = await res.json();
+			if (body.data?.node?.product) return;
+		} catch {
+			// Not visible yet (the null product comes back as an error) or a network blip: try again.
+		}
+		await new Promise((r) => setTimeout(r, 1500));
+	}
+	console.warn(`Design variant ${variantId} not on the storefront after ${timeoutMs / 1000}s; the cart will keep retrying.`);
+}
+
+/** Upload a PNG to Shopify's staging storage; the returned URL can be attached as product media. */
+async function uploadImage(png: Uint8Array<ArrayBuffer>, filename: string): Promise<string> {
+	type Staged = { stagedUploadsCreate: { stagedTargets: { url: string; resourceUrl: string; parameters: { name: string; value: string }[] }[]; userErrors: { message: string }[] } };
+	const { stagedUploadsCreate } = await admin<Staged>(
+		`mutation Stage($input: [StagedUploadInput!]!) {
+			stagedUploadsCreate(input: $input) { stagedTargets { url resourceUrl parameters { name value } } userErrors { message } }
+		}`,
+		{ input: [{ resource: 'IMAGE', filename, mimeType: 'image/png', httpMethod: 'POST', fileSize: String(png.byteLength) }] }
+	);
+	const target = stagedUploadsCreate.stagedTargets[0];
+	if (!target) throw new Error(`Shopify stagedUploadsCreate: ${stagedUploadsCreate.userErrors.map((e) => e.message).join('; ')}`);
+
+	const form = new FormData();
+	for (const { name, value } of target.parameters) form.append(name, value);
+	form.append('file', new Blob([png], { type: 'image/png' }), filename);
+	const res = await fetch(target.url, { method: 'POST', body: form, signal: AbortSignal.timeout(30_000) });
+	if (!res.ok) throw new Error(`Image upload responded ${res.status} ${res.statusText}`);
+	return target.resourceUrl;
+}
+
+function slug(text: string) {
+	return text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'part';
 }
 
 async function fetchOwnedProducts(email: string): Promise<AdminProduct[]> {
@@ -172,7 +361,13 @@ function toDesign(product: AdminProduct): FinalizedDesign {
 	const layer = field(product, 'layer_height');
 	const infill = field(product, 'infill_percentage');
 	const nozzle = field(product, 'nozzle_size');
+	const setups = field(product, 'cnc_setups');
 	const variant = product.variants.nodes[0];
+	const format = fileName?.match(/\.([a-z0-9]+)$/i)?.[1].toLowerCase() ?? null;
+	// Designs saved before `custom.manufacturing_method` existed: a Photon Workshop scene is SLA,
+	// anything else with a material is FDM.
+	const method = field(product, 'manufacturing_method');
+	const processId = processes.find((p) => p.badge === method)?.id ?? (format === 'pwscene' ? 'sla' : material ? 'fdm' : null);
 
 	// Kept for RETENTION_DAYS after `custom.last_interaction` (last ordered or extended). Designs
 	// without it yet count from when they were added.
@@ -187,18 +382,21 @@ function toDesign(product: AdminProduct): FinalizedDesign {
 		handle: product.handle,
 		name: product.title,
 		fileName,
-		format: fileName?.match(/\.([a-z0-9]+)$/i)?.[1].toLowerCase() ?? null,
-		processId: material ? 'fdm' : null,
+		format,
+		processId,
 		imageUrl: product.featuredMedia?.preview?.image?.url ?? null,
 		variantId: variant?.id ?? null,
 		price: variant ? Number(variant.price) : null,
 		availableForSale: variant?.availableForSale ?? false,
-		specs: [
-			material,
-			layer && `${layer} Layers`,
-			infill && `${infill}% Infill`,
-			nozzle && `${nozzle} mm Nozzle`
-		].filter((s): s is string => !!s),
+		specs: (processId === 'cnc'
+			? [material, field(product, 'cnc_axes'), field(product, 'cnc_stock_size'), setups && `${setups} ${setups === '1' ? 'Setup' : 'Setups'}`]
+			: [
+					material,
+					layer && `${layer} Layers`,
+					infill && (processId === 'sla' ? (infill === '0' ? 'Hollow' : 'Solid') : `${infill}% Infill`),
+					nozzle && `${nozzle} mm Nozzle`
+				]
+		).filter((s): s is string => !!s),
 		expiresAt: new Date(expires).toISOString(),
 		daysLeft,
 		status: daysLeft <= 0 || product.status === 'ARCHIVED' ? 'archived' : daysLeft <= EXPIRING_DAYS ? 'expiring' : 'active',

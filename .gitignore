@@ -21,3 +21,8 @@ Thumbs.db
 # Vite
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# Quotes and finalized 3MF models (DATA_DIR / MODELS_DIR)
+/data
+
+*.log

@@ -1,0 +1,1615 @@
+{
+    "version": "1",
+    "machine_type": {
+        "version": "3",
+        "name": "Anycubic Photon Mono 4",
+        "key_suffix": "pm4n",
+        "key_image_format": "pw0Img",
+        "res_x": 9024,
+        "res_y": 5120,
+        "xy_pixel": 17.0,
+        "xy_pixel_y": 17.0,
+        "rotate_z": 0.0,
+        "max_samples": 16,
+        "property": 7,
+        "print_xsize": 153.4080047607422,
+        "print_ysize": 87.04000091552735,
+        "print_zsize": 165.0,
+        "max_file_version": 517,
+        "prev_back_color": [
+            0.0078125,
+            0.28125,
+            0.390625
+        ],
+        "prev_model_color": [
+            0.8046875,
+            0.8046875,
+            0.8046875
+        ],
+        "prev_supports_color": [
+            0.07421875,
+            0.92578125,
+            0.9296875
+        ],
+        "prev_image_size": [
+            224,
+            168
+        ],
+        "child_screen": [
+            {
+                "x": 0,
+                "y": 0,
+                "width": 9024,
+                "height": 5120
+            }
+        ],
+        "prev2_back_color": [
+            0.0078125,
+            0.28125,
+            0.390625
+        ],
+        "prev2_image_size": [
+            224,
+            168
+        ],
+        "raster_segments_capacity": 0,
+        "raster_antialiasing": 0,
+        "cloudprev_back_color": [
+            0.9333333373069763,
+            0.9411764740943909,
+            0.9647058844566345
+        ],
+        "cloudprev_imag_size": [
+            800,
+            600
+        ],
+        "print_platform_zheights": [
+            0.0
+        ]
+    },
+    "machine_extern": {
+        "version": "3",
+        "alias": "Anycubic Photon Mono 4",
+        "picture": "Anycubic_Photon_Mono_M4.png",
+        "cloud_property": 0,
+        "device_cn_code": "",
+        "factory_resins": [
+            {
+                "version": "2",
+                "property": {
+                    "version": "4",
+                    "code": "19",
+                    "currency": "$",
+                    "price": 220.0,
+                    "type": "类ABS树脂 Pro 2",
+                    "volume": 1000.0,
+                    "subfunc_code": 0,
+                    "density": 1.2000000476837159,
+                    "target_temperature": 25.0,
+                    "brand_name": "Anycubic",
+                    "resin_name": "abs_like_resin_pro2",
+                    "film_name": "NFEP",
+                    "setting_name": "normal_print",
+                    "name": "Anycubic@abs_like_resin_pro2@NFEP@normal_print"
+                },
+                "depth_penetration_curve": {
+                    "zthick_min": 0.009999999776482582,
+                    "zthick_max": 0.20000000298023225,
+                    "light_intensity": 9000.0,
+                    "safety_coefficient": 1.600000023841858,
+                    "current_tempcurve_selector": -1,
+                    "temperature_coefficients": []
+                },
+                "slice_extpara": {
+                    "version": "3",
+                    "multi_state_used": 0,
+                    "transition_layercount": 15,
+                    "transition_type": 0,
+                    "multi_state_paras": {
+                        "bott_0": {
+                            "down_speed": 3.0,
+                            "height": 5.0,
+                            "up_speed": 3.0
+                        },
+                        "bott_1": {
+                            "down_speed": 3.0,
+                            "height": 3.0,
+                            "up_speed": 3.0
+                        },
+                        "normal_0": {
+                            "down_speed": 3.0,
+                            "height": 3.0,
+                            "up_speed": 3.0
+                        },
+                        "normal_1": {
+                            "down_speed": 6.0,
+                            "height": 4.0,
+                            "up_speed": 6.0
+                        }
+                    },
+                    "exposure_compensate": 0.0,
+                    "intelli_mode": 0,
+                    "max_acceleration": 0.0,
+                    "separate_support_exposure_delayed": 0.0,
+                    "material_scale_coeffs": [],
+                    "material_scale_coeffs_mode": 0,
+                    "material_scale_xyz": {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "z": 1.0
+                    }
+                },
+                "slicepara": {
+                    "anti_count": 1,
+                    "blur_level": 0,
+                    "bott_layers": 5,
+                    "bott_time": 40.0,
+                    "bott_time_dual": 40.0,
+                    "exposure_time": 3.200000047683716,
+                    "gray_level": 0,
+                    "off_time": 1.0,
+                    "use_indivi_layerpara": 0,
+                    "use_random_erode": 0,
+                    "zdown_speed": 6.0,
+                    "zthick": 0.05000000074505806,
+                    "zup_height": 6.0,
+                    "zup_speed": 4.0,
+                    "wait_before_lift": 0.0,
+                    "wait_after_lift": 0.0,
+                    "bott_off_time": 0.5,
+                    "bott_wait_before_lift": 0.0,
+                    "bott_wait_after_lift": 0.0
+                }
+            },
+            {
+                "version": "2",
+                "property": {
+                    "version": "4",
+                    "code": "19",
+                    "currency": "$",
+                    "price": 220.0,
+                    "type": "ABS-like Resin",
+                    "volume": 1000.0,
+                    "subfunc_code": 0,
+                    "density": 1.2000000476837159,
+                    "target_temperature": 25.0,
+                    "brand_name": "Anycubic",
+                    "resin_name": "abs_like_resin_v2",
+                    "film_name": "NFEP",
+                    "setting_name": "normal_print",
+                    "name": "Anycubic@abs_like_resin_v2@NFEP@normal_print"
+                },
+                "depth_penetration_curve": {
+                    "zthick_min": 0.009999999776482582,
+                    "zthick_max": 0.20000000298023225,
+                    "light_intensity": 9000.0,
+                    "safety_coefficient": 1.600000023841858,
+                    "current_tempcurve_selector": -1,
+                    "temperature_coefficients": []
+                },
+                "slice_extpara": {
+                    "version": "3",
+                    "multi_state_used": 0,
+                    "transition_layercount": 15,
+                    "transition_type": 0,
+                    "multi_state_paras": {
+                        "bott_0": {
+                            "down_speed": 3.0,
+                            "height": 5.0,
+                            "up_speed": 3.0
+                        },
+                        "bott_1": {
+                            "down_speed": 3.0,
+                            "height": 3.0,
+                            "up_speed": 3.0
+                        },
+                        "normal_0": {
+                            "down_speed": 3.0,
+                            "height": 3.0,
+                            "up_speed": 3.0
+                        },
+                        "normal_1": {
+                            "down_speed": 6.0,
+                            "height": 4.0,
+                            "up_speed": 6.0
+                        }
+                    },
+                    "exposure_compensate": 0.0,
+                    "intelli_mode": 0,
+                    "max_acceleration": 0.0,
+                    "separate_support_exposure_delayed": 0.0,
+                    "material_scale_coeffs": [],
+                    "material_scale_coeffs_mode": 0,
+                    "material_scale_xyz": {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "z": 1.0
+                    }
+                },
+                "slicepara": {
+                    "anti_count": 1,
+                    "blur_level": 0,
+                    "bott_layers": 5,
+                    "bott_time": 40.0,
+                    "bott_time_dual": 40.0,
+                    "exposure_time": 3.0,
+                    "gray_level": 0,
+                    "off_time": 1.0,
+                    "use_indivi_layerpara": 0,
+                    "use_random_erode": 0,
+                    "zdown_speed": 6.0,
+                    "zthick": 0.05000000074505806,
+                    "zup_height": 6.0,
+                    "zup_speed": 4.0,
+                    "wait_before_lift": 0.0,
+                    "wait_after_lift": 0.0,
+                    "bott_off_time": 0.5,
+                    "bott_wait_before_lift": 0.0,
+                    "bott_wait_after_lift": 0.0
+                }
+            },
+            {
+                "version": "2",
+                "property": {
+                    "version": "4",
+                    "code": "18",
+                    "currency": "$",
+                    "price": 220.0,
+                    "type": "生物相容树脂",
+                    "volume": 1000.0,
+                    "subfunc_code": 0,
+                    "density": 1.2000000476837159,
+                    "target_temperature": 25.0,
+                    "brand_name": "Anycubic",
+                    "resin_name": "bio_resin",
+                    "film_name": "NFEP",
+                    "setting_name": "normal_print",
+                    "name": "Anycubic@bio_resin@NFEP@normal_print"
+                },
+                "depth_penetration_curve": {
+                    "zthick_min": 0.009999999776482582,
+                    "zthick_max": 0.20000000298023225,
+                    "light_intensity": 9000.0,
+                    "safety_coefficient": 1.600000023841858,
+                    "current_tempcurve_selector": -1,
+                    "temperature_coefficients": []
+                },
+                "slice_extpara": {
+                    "version": "3",
+                    "multi_state_used": 0,
+                    "transition_layercount": 15,
+                    "transition_type": 0,
+                    "multi_state_paras": {
+                        "bott_0": {
+                            "down_speed": 3.0,
+                            "height": 5.0,
+                            "up_speed": 3.0
+                        },
+                        "bott_1": {
+                            "down_speed": 3.0,
+                            "height": 3.0,
+                            "up_speed": 3.0
+                        },
+                        "normal_0": {
+                            "down_speed": 3.0,
+                            "height": 3.0,
+                            "up_speed": 3.0
+                        },
+                        "normal_1": {
+                            "down_speed": 6.0,
+                            "height": 4.0,
+                            "up_speed": 6.0
+                        }
+                    },
+                    "exposure_compensate": 0.0,
+                    "intelli_mode": 0,
+                    "max_acceleration": 0.0,
+                    "separate_support_exposure_delayed": 0.0,
+                    "material_scale_coeffs": [],
+                    "material_scale_coeffs_mode": 0,
+                    "material_scale_xyz": {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "z": 1.0
+                    }
+                },
+                "slicepara": {
+                    "anti_count": 1,
+                    "blur_level": 0,
+                    "bott_layers": 5,
+                    "bott_time": 40.0,
+                    "bott_time_dual": 40.0,
+                    "exposure_time": 3.0,
+                    "gray_level": 0,
+                    "off_time": 2.0,
+                    "use_indivi_layerpara": 0,
+                    "use_random_erode": 0,
+                    "zdown_speed": 6.0,
+                    "zthick": 0.05000000074505806,
+                    "zup_height": 6.0,
+                    "zup_speed": 4.0,
+                    "wait_before_lift": 0.0,
+                    "wait_after_lift": 0.0,
+                    "bott_off_time": 0.5,
+                    "bott_wait_before_lift": 0.0,
+                    "bott_wait_after_lift": 0.0
+                }
+            },
+            {
+                "version": "2",
+                "property": {
+                    "version": "4",
+                    "code": "24",
+                    "currency": "$",
+                    "price": 220.0,
+                    "type": "DIY调色树脂",
+                    "volume": 1000.0,
+                    "subfunc_code": 0,
+                    "density": 1.2000000476837159,
+                    "target_temperature": 25.0,
+                    "brand_name": "Anycubic",
+                    "resin_name": "diy_color_mixing_resin",
+                    "film_name": "NFEP",
+                    "setting_name": "normal_print",
+                    "name": "Anycubic@diy_color_mixing_resin@NFEP@normal_print"
+                },
+                "depth_penetration_curve": {
+                    "zthick_min": 0.009999999776482582,
+                    "zthick_max": 0.20000000298023225,
+                    "light_intensity": 9000.0,
+                    "safety_coefficient": 1.600000023841858,
+                    "current_tempcurve_selector": -1,
+                    "temperature_coefficients": []
+                },
+                "slice_extpara": {
+                    "version": "3",
+                    "multi_state_used": 0,
+                    "transition_layercount": 15,
+                    "transition_type": 0,
+                    "multi_state_paras": {
+                        "bott_0": {
+                            "down_speed": 3.0,
+                            "height": 5.0,
+                            "up_speed": 3.0
+                        },
+                        "bott_1": {
+                            "down_speed": 3.0,
+                            "height": 3.0,
+                            "up_speed": 3.0
+                        },
+                        "normal_0": {
+                            "down_speed": 3.0,
+                            "height": 3.0,
+                            "up_speed": 3.0
+                        },
+                        "normal_1": {
+                            "down_speed": 6.0,
+                            "height": 4.0,
+                            "up_speed": 6.0
+                        }
+                    },
+                    "exposure_compensate": 0.0,
+                    "intelli_mode": 0,
+                    "max_acceleration": 0.0,
+                    "separate_support_exposure_delayed": 0.0,
+                    "material_scale_coeffs": [],
+                    "material_scale_coeffs_mode": 0,
+                    "material_scale_xyz": {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "z": 1.0
+                    }
+                },
+                "slicepara": {
+                    "anti_count": 1,
+                    "blur_level": 0,
+                    "bott_layers": 5,
+                    "bott_time": 40.0,
+                    "bott_time_dual": 40.0,
+                    "exposure_time": 3.799999952316284,
+                    "gray_level": 0,
+                    "off_time": 1.0,
+                    "use_indivi_layerpara": 0,
+                    "use_random_erode": 0,
+                    "zdown_speed": 6.0,
+                    "zthick": 0.05000000074505806,
+                    "zup_height": 6.0,
+                    "zup_speed": 4.0,
+                    "wait_before_lift": 0.0,
+                    "wait_after_lift": 0.0,
+                    "bott_off_time": 0.5,
+                    "bott_wait_before_lift": 0.0,
+                    "bott_wait_after_lift": 0.0
+                }
+            },
+            {
+                "version": "2",
+                "property": {
+                    "version": "4",
+                    "code": "16",
+                    "currency": "$",
+                    "price": 220.0,
+                    "type": "DLP红蜡树脂",
+                    "volume": 1000.0,
+                    "subfunc_code": 0,
+                    "density": 1.2000000476837159,
+                    "target_temperature": 25.0,
+                    "brand_name": "Anycubic",
+                    "resin_name": "dlp_craftsman_resin",
+                    "film_name": "NFEP",
+                    "setting_name": "normal_print",
+                    "name": "Anycubic@dlp_craftsman_resin@NFEP@normal_print"
+                },
+                "depth_penetration_curve": {
+                    "zthick_min": 0.009999999776482582,
+                    "zthick_max": 0.20000000298023225,
+                    "light_intensity": 9000.0,
+                    "safety_coefficient": 1.600000023841858,
+                    "current_tempcurve_selector": -1,
+                    "temperature_coefficients": []
+                },
+                "slice_extpara": {
+                    "version": "3",
+                    "multi_state_used": 0,
+                    "transition_layercount": 15,
+                    "transition_type": 0,
+                    "multi_state_paras": {
+                        "bott_0": {
+                            "down_speed": 3.0,
+                            "height": 5.0,
+                            "up_speed": 3.0
+                        },
+                        "bott_1": {
+                            "down_speed": 3.0,
+                            "height": 3.0,
+                            "up_speed": 3.0
+                        },
+                        "normal_0": {
+                            "down_speed": 3.0,
+                            "height": 3.0,
+                            "up_speed": 3.0
+                        },
+                        "normal_1": {
+                            "down_speed": 6.0,
+                            "height": 4.0,
+                            "up_speed": 6.0
+                        }
+                    },
+                    "exposure_compensate": 0.0,
+                    "intelli_mode": 0,
+                    "max_acceleration": 0.0,
+                    "separate_support_exposure_delayed": 0.0,
+                    "material_scale_coeffs": [],
+                    "material_scale_coeffs_mode": 0,
+                    "material_scale_xyz": {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "z": 1.0
+                    }
+                },
+                "slicepara": {
+                    "anti_count": 1,
+                    "blur_level": 0,
+                    "bott_layers": 5,
+                    "bott_time": 50.0,
+                    "bott_time_dual": 50.0,
+                    "exposure_time": 3.4000000953674318,
+                    "gray_level": 0,
+                    "off_time": 2.0,
+                    "use_indivi_layerpara": 0,
+                    "use_random_erode": 0,
+                    "zdown_speed": 6.0,
+                    "zthick": 0.05000000074505806,
+                    "zup_height": 6.0,
+                    "zup_speed": 4.0,
+                    "wait_before_lift": 0.0,
+                    "wait_after_lift": 0.0,
+                    "bott_off_time": 0.5,
+                    "bott_wait_before_lift": 0.0,
+                    "bott_wait_after_lift": 0.0
+                }
+            },
+            {
+                "version": "2",
+                "property": {
+                    "version": "4",
+                    "code": "23",
+                    "currency": "$",
+                    "price": 220.0,
+                    "type": "高透树脂",
+                    "volume": 1000.0,
+                    "subfunc_code": 0,
+                    "density": 1.2000000476837159,
+                    "target_temperature": 25.0,
+                    "brand_name": "Anycubic",
+                    "resin_name": "high_clear_resin",
+                    "film_name": "NFEP",
+                    "setting_name": "normal_print",
+                    "name": "Anycubic@high_clear_resin@NFEP@normal_print"
+                },
+                "depth_penetration_curve": {
+                    "zthick_min": 0.009999999776482582,
+                    "zthick_max": 0.20000000298023225,
+                    "light_intensity": 9000.0,
+                    "safety_coefficient": 1.600000023841858,
+                    "current_tempcurve_selector": -1,
+                    "temperature_coefficients": []
+                },
+                "slice_extpara": {
+                    "version": "3",
+                    "multi_state_used": 0,
+                    "transition_layercount": 15,
+                    "transition_type": 0,
+                    "multi_state_paras": {
+                        "bott_0": {
+                            "down_speed": 3.0,
+                            "height": 5.0,
+                            "up_speed": 3.0
+                        },
+                        "bott_1": {
+                            "down_speed": 3.0,
+                            "height": 3.0,
+                            "up_speed": 3.0
+                        },
+                        "normal_0": {
+                            "down_speed": 3.0,
+                            "height": 3.0,
+                            "up_speed": 3.0
+                        },
+                        "normal_1": {
+                            "down_speed": 6.0,
+                            "height": 4.0,
+                            "up_speed": 6.0
+                        }
+                    },
+                    "exposure_compensate": 0.0,
+                    "intelli_mode": 0,
+                    "max_acceleration": 0.0,
+                    "separate_support_exposure_delayed": 0.0,
+                    "material_scale_coeffs": [],
+                    "material_scale_coeffs_mode": 0,
+                    "material_scale_xyz": {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "z": 1.0
+                    }
+                },
+                "slicepara": {
+                    "anti_count": 1,
+                    "blur_level": 0,
+                    "bott_layers": 5,
+                    "bott_time": 65.0,
+                    "bott_time_dual": 65.0,
+                    "exposure_time": 8.199999809265137,
+                    "gray_level": 0,
+                    "off_time": 2.0,
+                    "use_indivi_layerpara": 0,
+                    "use_random_erode": 0,
+                    "zdown_speed": 6.0,
+                    "zthick": 0.05000000074505806,
+                    "zup_height": 6.0,
+                    "zup_speed": 4.0,
+                    "wait_before_lift": 0.0,
+                    "wait_after_lift": 0.0,
+                    "bott_off_time": 0.5,
+                    "bott_wait_before_lift": 0.0,
+                    "bott_wait_after_lift": 0.0
+                }
+            },
+            {
+                "version": "2",
+                "property": {
+                    "version": "4",
+                    "code": "22",
+                    "currency": "$",
+                    "price": 220.0,
+                    "type": "高速树脂 2.0",
+                    "volume": 1000.0,
+                    "subfunc_code": 0,
+                    "density": 1.2000000476837159,
+                    "target_temperature": 25.0,
+                    "brand_name": "Anycubic",
+                    "resin_name": "high_speed_resin_2.0",
+                    "film_name": "NFEP",
+                    "setting_name": "normal_print",
+                    "name": "Anycubic@high_speed_resin_2.0@NFEP@normal_print"
+                },
+                "depth_penetration_curve": {
+                    "zthick_min": 0.009999999776482582,
+                    "zthick_max": 0.20000000298023225,
+                    "light_intensity": 9000.0,
+                    "safety_coefficient": 1.600000023841858,
+                    "current_tempcurve_selector": -1,
+                    "temperature_coefficients": []
+                },
+                "slice_extpara": {
+                    "version": "3",
+                    "multi_state_used": 0,
+                    "transition_layercount": 15,
+                    "transition_type": 0,
+                    "multi_state_paras": {
+                        "bott_0": {
+                            "down_speed": 3.0,
+                            "height": 5.0,
+                            "up_speed": 3.0
+                        },
+                        "bott_1": {
+                            "down_speed": 3.0,
+                            "height": 3.0,
+                            "up_speed": 3.0
+                        },
+                        "normal_0": {
+                            "down_speed": 3.0,
+                            "height": 3.0,
+                            "up_speed": 3.0
+                        },
+                        "normal_1": {
+                            "down_speed": 10.0,
+                            "height": 4.0,
+                            "up_speed": 10.0
+                        }
+                    },
+                    "exposure_compensate": 0.0,
+                    "intelli_mode": 0,
+                    "max_acceleration": 0.0,
+                    "separate_support_exposure_delayed": 0.0,
+                    "material_scale_coeffs": [],
+                    "material_scale_coeffs_mode": 0,
+                    "material_scale_xyz": {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "z": 1.0
+                    }
+                },
+                "slicepara": {
+                    "anti_count": 1,
+                    "blur_level": 0,
+                    "bott_layers": 5,
+                    "bott_time": 25.0,
+                    "bott_time_dual": 25.0,
+                    "exposure_time": 2.5999999046325685,
+                    "gray_level": 0,
+                    "off_time": 1.0,
+                    "use_indivi_layerpara": 0,
+                    "use_random_erode": 0,
+                    "zdown_speed": 8.0,
+                    "zthick": 0.10000000149011612,
+                    "zup_height": 6.0,
+                    "zup_speed": 8.0,
+                    "wait_before_lift": 0.0,
+                    "wait_after_lift": 0.0,
+                    "bott_off_time": 0.5,
+                    "bott_wait_before_lift": 0.0,
+                    "bott_wait_after_lift": 0.0
+                }
+            },
+            {
+                "version": "2",
+                "property": {
+                    "version": "4",
+                    "code": "12",
+                    "currency": "$",
+                    "price": 220.0,
+                    "type": "植物基树脂2.0",
+                    "volume": 1000.0,
+                    "subfunc_code": 0,
+                    "density": 1.2000000476837159,
+                    "target_temperature": 25.0,
+                    "brand_name": "Anycubic",
+                    "resin_name": "plant_based_resin_2.0",
+                    "film_name": "NFEP",
+                    "setting_name": "normal_print",
+                    "name": "Anycubic@plant_based_resin_2.0@NFEP@normal_print"
+                },
+                "depth_penetration_curve": {
+                    "zthick_min": 0.009999999776482582,
+                    "zthick_max": 0.20000000298023225,
+                    "light_intensity": 9000.0,
+                    "safety_coefficient": 1.600000023841858,
+                    "current_tempcurve_selector": -1,
+                    "temperature_coefficients": []
+                },
+                "slice_extpara": {
+                    "version": "3",
+                    "multi_state_used": 0,
+                    "transition_layercount": 15,
+                    "transition_type": 0,
+                    "multi_state_paras": {
+                        "bott_0": {
+                            "down_speed": 3.0,
+                            "height": 5.0,
+                            "up_speed": 3.0
+                        },
+                        "bott_1": {
+                            "down_speed": 3.0,
+                            "height": 3.0,
+                            "up_speed": 3.0
+                        },
+                        "normal_0": {
+                            "down_speed": 3.0,
+                            "height": 3.0,
+                            "up_speed": 3.0
+                        },
+                        "normal_1": {
+                            "down_speed": 6.0,
+                            "height": 4.0,
+                            "up_speed": 6.0
+                        }
+                    },
+                    "exposure_compensate": 0.0,
+                    "intelli_mode": 0,
+                    "max_acceleration": 0.0,
+                    "separate_support_exposure_delayed": 0.0,
+                    "material_scale_coeffs": [],
+                    "material_scale_coeffs_mode": 0,
+                    "material_scale_xyz": {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "z": 1.0
+                    }
+                },
+                "slicepara": {
+                    "anti_count": 1,
+                    "blur_level": 0,
+                    "bott_layers": 5,
+                    "bott_time": 40.0,
+                    "bott_time_dual": 40.0,
+                    "exposure_time": 3.5999999046325685,
+                    "gray_level": 0,
+                    "off_time": 1.0,
+                    "use_indivi_layerpara": 0,
+                    "use_random_erode": 0,
+                    "zdown_speed": 6.0,
+                    "zthick": 0.05000000074505806,
+                    "zup_height": 6.0,
+                    "zup_speed": 4.0,
+                    "wait_before_lift": 0.0,
+                    "wait_after_lift": 0.0,
+                    "bott_off_time": 0.5,
+                    "bott_wait_before_lift": 0.0,
+                    "bott_wait_after_lift": 0.0
+                }
+            },
+            {
+                "version": "2",
+                "property": {
+                    "version": "4",
+                    "code": "20",
+                    "currency": "$",
+                    "price": 220.0,
+                    "type": "刚性耐温树脂",
+                    "volume": 1000.0,
+                    "subfunc_code": 0,
+                    "density": 1.2000000476837159,
+                    "target_temperature": 25.0,
+                    "brand_name": "Anycubic",
+                    "resin_name": "rigid_100_resin",
+                    "film_name": "NFEP",
+                    "setting_name": "normal_print",
+                    "name": "Anycubic@rigid_100_resin@NFEP@normal_print"
+                },
+                "depth_penetration_curve": {
+                    "zthick_min": 0.009999999776482582,
+                    "zthick_max": 0.20000000298023225,
+                    "light_intensity": 9000.0,
+                    "safety_coefficient": 1.600000023841858,
+                    "current_tempcurve_selector": -1,
+                    "temperature_coefficients": []
+                },
+                "slice_extpara": {
+                    "version": "3",
+                    "multi_state_used": 0,
+                    "transition_layercount": 15,
+                    "transition_type": 0,
+                    "multi_state_paras": {
+                        "bott_0": {
+                            "down_speed": 3.0,
+                            "height": 5.0,
+                            "up_speed": 3.0
+                        },
+                        "bott_1": {
+                            "down_speed": 3.0,
+                            "height": 3.0,
+                            "up_speed": 3.0
+                        },
+                        "normal_0": {
+                            "down_speed": 3.0,
+                            "height": 3.0,
+                            "up_speed": 3.0
+                        },
+                        "normal_1": {
+                            "down_speed": 6.0,
+                            "height": 4.0,
+                            "up_speed": 6.0
+                        }
+                    },
+                    "exposure_compensate": 0.0,
+                    "intelli_mode": 0,
+                    "max_acceleration": 0.0,
+                    "separate_support_exposure_delayed": 0.0,
+                    "material_scale_coeffs": [],
+                    "material_scale_coeffs_mode": 0,
+                    "material_scale_xyz": {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "z": 1.0
+                    }
+                },
+                "slicepara": {
+                    "anti_count": 1,
+                    "blur_level": 0,
+                    "bott_layers": 5,
+                    "bott_time": 45.0,
+                    "bott_time_dual": 45.0,
+                    "exposure_time": 3.799999952316284,
+                    "gray_level": 0,
+                    "off_time": 3.0,
+                    "use_indivi_layerpara": 0,
+                    "use_random_erode": 0,
+                    "zdown_speed": 6.0,
+                    "zthick": 0.05000000074505806,
+                    "zup_height": 6.0,
+                    "zup_speed": 4.0,
+                    "wait_before_lift": 0.0,
+                    "wait_after_lift": 0.0,
+                    "bott_off_time": 0.5,
+                    "bott_wait_before_lift": 0.0,
+                    "bott_wait_after_lift": 0.0
+                }
+            },
+            {
+                "version": "2",
+                "property": {
+                    "version": "4",
+                    "code": "10",
+                    "currency": "$",
+                    "price": 220.0,
+                    "type": "标准树脂_快速",
+                    "volume": 1000.0,
+                    "subfunc_code": 0,
+                    "density": 1.2000000476837159,
+                    "target_temperature": 25.0,
+                    "brand_name": "Anycubic",
+                    "resin_name": "standard_resin",
+                    "film_name": "NFEP",
+                    "setting_name": "fast_print",
+                    "name": "Anycubic@standard_resin@NFEP@fast_print"
+                },
+                "depth_penetration_curve": {
+                    "zthick_min": 0.009999999776482582,
+                    "zthick_max": 0.20000000298023225,
+                    "light_intensity": 9000.0,
+                    "safety_coefficient": 1.600000023841858,
+                    "current_tempcurve_selector": -1,
+                    "temperature_coefficients": []
+                },
+                "slice_extpara": {
+                    "version": "3",
+                    "multi_state_used": 0,
+                    "transition_layercount": 15,
+                    "transition_type": 0,
+                    "multi_state_paras": {
+                        "bott_0": {
+                            "down_speed": 3.0,
+                            "height": 5.0,
+                            "up_speed": 3.0
+                        },
+                        "bott_1": {
+                            "down_speed": 3.0,
+                            "height": 3.0,
+                            "up_speed": 3.0
+                        },
+                        "normal_0": {
+                            "down_speed": 3.0,
+                            "height": 3.0,
+                            "up_speed": 3.0
+                        },
+                        "normal_1": {
+                            "down_speed": 10.0,
+                            "height": 4.0,
+                            "up_speed": 10.0
+                        }
+                    },
+                    "exposure_compensate": 0.0,
+                    "intelli_mode": 0,
+                    "max_acceleration": 0.0,
+                    "separate_support_exposure_delayed": 0.0,
+                    "material_scale_coeffs": [],
+                    "material_scale_coeffs_mode": 0,
+                    "material_scale_xyz": {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "z": 1.0
+                    }
+                },
+                "slicepara": {
+                    "anti_count": 1,
+                    "blur_level": 0,
+                    "bott_layers": 5,
+                    "bott_time": 35.0,
+                    "bott_time_dual": 35.0,
+                    "exposure_time": 3.5999999046325685,
+                    "gray_level": 0,
+                    "off_time": 1.0,
+                    "use_indivi_layerpara": 0,
+                    "use_random_erode": 0,
+                    "zdown_speed": 8.0,
+                    "zthick": 0.10000000149011612,
+                    "zup_height": 6.0,
+                    "zup_speed": 8.0,
+                    "wait_before_lift": 0.0,
+                    "wait_after_lift": 0.0,
+                    "bott_off_time": 0.5,
+                    "bott_wait_before_lift": 0.0,
+                    "bott_wait_after_lift": 0.0
+                }
+            },
+            {
+                "version": "2",
+                "property": {
+                    "version": "4",
+                    "code": "10",
+                    "currency": "$",
+                    "price": 220.0,
+                    "type": "标准树脂_正常",
+                    "volume": 1000.0,
+                    "subfunc_code": 0,
+                    "density": 1.2000000476837159,
+                    "target_temperature": 25.0,
+                    "brand_name": "Anycubic",
+                    "resin_name": "standard_resin",
+                    "film_name": "NFEP",
+                    "setting_name": "normal_print",
+                    "name": "Anycubic@standard_resin@NFEP@normal_print"
+                },
+                "depth_penetration_curve": {
+                    "zthick_min": 0.009999999776482582,
+                    "zthick_max": 0.20000000298023225,
+                    "light_intensity": 9000.0,
+                    "safety_coefficient": 1.600000023841858,
+                    "current_tempcurve_selector": -1,
+                    "temperature_coefficients": []
+                },
+                "slice_extpara": {
+                    "version": "3",
+                    "multi_state_used": 0,
+                    "transition_layercount": 15,
+                    "transition_type": 0,
+                    "multi_state_paras": {
+                        "bott_0": {
+                            "down_speed": 3.0,
+                            "height": 5.0,
+                            "up_speed": 3.0
+                        },
+                        "bott_1": {
+                            "down_speed": 3.0,
+                            "height": 3.0,
+                            "up_speed": 3.0
+                        },
+                        "normal_0": {
+                            "down_speed": 3.0,
+                            "height": 3.0,
+                            "up_speed": 3.0
+                        },
+                        "normal_1": {
+                            "down_speed": 6.0,
+                            "height": 4.0,
+                            "up_speed": 6.0
+                        }
+                    },
+                    "exposure_compensate": 0.0,
+                    "intelli_mode": 0,
+                    "max_acceleration": 0.0,
+                    "separate_support_exposure_delayed": 0.0,
+                    "material_scale_coeffs": [],
+                    "material_scale_coeffs_mode": 0,
+                    "material_scale_xyz": {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "z": 1.0
+                    }
+                },
+                "slicepara": {
+                    "anti_count": 1,
+                    "blur_level": 0,
+                    "bott_layers": 5,
+                    "bott_time": 35.0,
+                    "bott_time_dual": 35.0,
+                    "exposure_time": 2.799999952316284,
+                    "gray_level": 0,
+                    "off_time": 1.0,
+                    "use_indivi_layerpara": 0,
+                    "use_random_erode": 0,
+                    "zdown_speed": 6.0,
+                    "zthick": 0.05000000074505806,
+                    "zup_height": 6.0,
+                    "zup_speed": 4.0,
+                    "wait_before_lift": 0.0,
+                    "wait_after_lift": 0.0,
+                    "bott_off_time": 0.5,
+                    "bott_wait_before_lift": 0.0,
+                    "bott_wait_after_lift": 0.0
+                }
+            },
+            {
+                "version": "2",
+                "property": {
+                    "version": "4",
+                    "code": "10",
+                    "currency": "$",
+                    "price": 220.0,
+                    "type": "标准树脂+",
+                    "volume": 1000.0,
+                    "subfunc_code": 0,
+                    "density": 1.2000000476837159,
+                    "target_temperature": 25.0,
+                    "brand_name": "Anycubic",
+                    "resin_name": "standard_resin+",
+                    "film_name": "NFEP",
+                    "setting_name": "normal_print",
+                    "name": "Anycubic@standard_resin+@NFEP@normal_print"
+                },
+                "depth_penetration_curve": {
+                    "zthick_min": 0.009999999776482582,
+                    "zthick_max": 0.20000000298023225,
+                    "light_intensity": 9000.0,
+                    "safety_coefficient": 1.600000023841858,
+                    "current_tempcurve_selector": -1,
+                    "temperature_coefficients": []
+                },
+                "slice_extpara": {
+                    "version": "3",
+                    "multi_state_used": 0,
+                    "transition_layercount": 15,
+                    "transition_type": 0,
+                    "multi_state_paras": {
+                        "bott_0": {
+                            "down_speed": 3.0,
+                            "height": 5.0,
+                            "up_speed": 3.0
+                        },
+                        "bott_1": {
+                            "down_speed": 3.0,
+                            "height": 3.0,
+                            "up_speed": 3.0
+                        },
+                        "normal_0": {
+                            "down_speed": 3.0,
+                            "height": 3.0,
+                            "up_speed": 3.0
+                        },
+                        "normal_1": {
+                            "down_speed": 6.0,
+                            "height": 4.0,
+                            "up_speed": 6.0
+                        }
+                    },
+                    "exposure_compensate": 0.0,
+                    "intelli_mode": 0,
+                    "max_acceleration": 0.0,
+                    "separate_support_exposure_delayed": 0.0,
+                    "material_scale_coeffs": [],
+                    "material_scale_coeffs_mode": 0,
+                    "material_scale_xyz": {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "z": 1.0
+                    }
+                },
+                "slicepara": {
+                    "anti_count": 1,
+                    "blur_level": 0,
+                    "bott_layers": 5,
+                    "bott_time": 40.0,
+                    "bott_time_dual": 40.0,
+                    "exposure_time": 3.5999999046325685,
+                    "gray_level": 0,
+                    "off_time": 2.0,
+                    "use_indivi_layerpara": 0,
+                    "use_random_erode": 0,
+                    "zdown_speed": 6.0,
+                    "zthick": 0.05000000074505806,
+                    "zup_height": 6.0,
+                    "zup_speed": 4.0,
+                    "wait_before_lift": 0.0,
+                    "wait_after_lift": 0.0,
+                    "bott_off_time": 0.5,
+                    "bott_wait_before_lift": 0.0,
+                    "bott_wait_after_lift": 0.0
+                }
+            },
+            {
+                "version": "2",
+                "property": {
+                    "version": "4",
+                    "code": "10",
+                    "currency": "$",
+                    "price": 220.0,
+                    "type": "标准树脂 V2",
+                    "volume": 1000.0,
+                    "subfunc_code": 0,
+                    "density": 1.2000000476837159,
+                    "target_temperature": 25.0,
+                    "brand_name": "Anycubic",
+                    "resin_name": "standard_resin_v2",
+                    "film_name": "NFEP",
+                    "setting_name": "normal_print",
+                    "name": "Anycubic@standard_resin_v2@NFEP@normal_print"
+                },
+                "depth_penetration_curve": {
+                    "zthick_min": 0.009999999776482582,
+                    "zthick_max": 0.20000000298023225,
+                    "light_intensity": 9000.0,
+                    "safety_coefficient": 1.600000023841858,
+                    "current_tempcurve_selector": -1,
+                    "temperature_coefficients": []
+                },
+                "slice_extpara": {
+                    "version": "3",
+                    "multi_state_used": 0,
+                    "transition_layercount": 15,
+                    "transition_type": 0,
+                    "multi_state_paras": {
+                        "bott_0": {
+                            "down_speed": 3.0,
+                            "height": 5.0,
+                            "up_speed": 3.0
+                        },
+                        "bott_1": {
+                            "down_speed": 3.0,
+                            "height": 3.0,
+                            "up_speed": 3.0
+                        },
+                        "normal_0": {
+                            "down_speed": 3.0,
+                            "height": 3.0,
+                            "up_speed": 3.0
+                        },
+                        "normal_1": {
+                            "down_speed": 6.0,
+                            "height": 4.0,
+                            "up_speed": 6.0
+                        }
+                    },
+                    "exposure_compensate": 0.0,
+                    "intelli_mode": 0,
+                    "max_acceleration": 0.0,
+                    "separate_support_exposure_delayed": 0.0,
+                    "material_scale_coeffs": [],
+                    "material_scale_coeffs_mode": 0,
+                    "material_scale_xyz": {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "z": 1.0
+                    }
+                },
+                "slicepara": {
+                    "anti_count": 1,
+                    "blur_level": 0,
+                    "bott_layers": 5,
+                    "bott_time": 40.0,
+                    "bott_time_dual": 40.0,
+                    "exposure_time": 3.4000000953674318,
+                    "gray_level": 0,
+                    "off_time": 2.0,
+                    "use_indivi_layerpara": 0,
+                    "use_random_erode": 0,
+                    "zdown_speed": 6.0,
+                    "zthick": 0.05000000074505806,
+                    "zup_height": 6.0,
+                    "zup_speed": 4.0,
+                    "wait_before_lift": 0.0,
+                    "wait_after_lift": 0.0,
+                    "bott_off_time": 0.5,
+                    "bott_wait_before_lift": 0.0,
+                    "bott_wait_after_lift": 0.0
+                }
+            },
+            {
+                "version": "2",
+                "property": {
+                    "version": "4",
+                    "code": "21",
+                    "currency": "$",
+                    "price": 220.0,
+                    "type": "质感树脂",
+                    "volume": 1000.0,
+                    "subfunc_code": 0,
+                    "density": 1.2000000476837159,
+                    "target_temperature": 25.0,
+                    "brand_name": "Anycubic",
+                    "resin_name": "texture_resin",
+                    "film_name": "NFEP",
+                    "setting_name": "normal_print",
+                    "name": "Anycubic@texture_resin@NFEP@normal_print"
+                },
+                "depth_penetration_curve": {
+                    "zthick_min": 0.009999999776482582,
+                    "zthick_max": 0.20000000298023225,
+                    "light_intensity": 9000.0,
+                    "safety_coefficient": 1.600000023841858,
+                    "current_tempcurve_selector": -1,
+                    "temperature_coefficients": []
+                },
+                "slice_extpara": {
+                    "version": "3",
+                    "multi_state_used": 0,
+                    "transition_layercount": 15,
+                    "transition_type": 0,
+                    "multi_state_paras": {
+                        "bott_0": {
+                            "down_speed": 3.0,
+                            "height": 5.0,
+                            "up_speed": 3.0
+                        },
+                        "bott_1": {
+                            "down_speed": 3.0,
+                            "height": 3.0,
+                            "up_speed": 3.0
+                        },
+                        "normal_0": {
+                            "down_speed": 3.0,
+                            "height": 3.0,
+                            "up_speed": 3.0
+                        },
+                        "normal_1": {
+                            "down_speed": 6.0,
+                            "height": 4.0,
+                            "up_speed": 6.0
+                        }
+                    },
+                    "exposure_compensate": 0.0,
+                    "intelli_mode": 0,
+                    "max_acceleration": 0.0,
+                    "separate_support_exposure_delayed": 0.0,
+                    "material_scale_coeffs": [],
+                    "material_scale_coeffs_mode": 0,
+                    "material_scale_xyz": {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "z": 1.0
+                    }
+                },
+                "slicepara": {
+                    "anti_count": 1,
+                    "blur_level": 0,
+                    "bott_layers": 5,
+                    "bott_time": 40.0,
+                    "bott_time_dual": 40.0,
+                    "exposure_time": 3.200000047683716,
+                    "gray_level": 0,
+                    "off_time": 1.0,
+                    "use_indivi_layerpara": 0,
+                    "use_random_erode": 0,
+                    "zdown_speed": 6.0,
+                    "zthick": 0.05000000074505806,
+                    "zup_height": 6.0,
+                    "zup_speed": 4.0,
+                    "wait_before_lift": 0.0,
+                    "wait_after_lift": 0.0,
+                    "bott_off_time": 0.5,
+                    "bott_wait_before_lift": 0.0,
+                    "bott_wait_after_lift": 0.0
+                }
+            },
+            {
+                "version": "2",
+                "property": {
+                    "version": "4",
+                    "code": "15",
+                    "currency": "$",
+                    "price": 220.0,
+                    "type": "韧性树脂 2.0",
+                    "volume": 1000.0,
+                    "subfunc_code": 0,
+                    "density": 1.2000000476837159,
+                    "target_temperature": 25.0,
+                    "brand_name": "Anycubic",
+                    "resin_name": "tough_resin_2.0",
+                    "film_name": "NFEP",
+                    "setting_name": "normal_print",
+                    "name": "Anycubic@tough_resin_2.0@NFEP@normal_print"
+                },
+                "depth_penetration_curve": {
+                    "zthick_min": 0.009999999776482582,
+                    "zthick_max": 0.20000000298023225,
+                    "light_intensity": 9000.0,
+                    "safety_coefficient": 1.600000023841858,
+                    "current_tempcurve_selector": -1,
+                    "temperature_coefficients": []
+                },
+                "slice_extpara": {
+                    "version": "3",
+                    "multi_state_used": 0,
+                    "transition_layercount": 15,
+                    "transition_type": 0,
+                    "multi_state_paras": {
+                        "bott_0": {
+                            "down_speed": 3.0,
+                            "height": 5.0,
+                            "up_speed": 3.0
+                        },
+                        "bott_1": {
+                            "down_speed": 3.0,
+                            "height": 3.0,
+                            "up_speed": 3.0
+                        },
+                        "normal_0": {
+                            "down_speed": 3.0,
+                            "height": 3.0,
+                            "up_speed": 3.0
+                        },
+                        "normal_1": {
+                            "down_speed": 6.0,
+                            "height": 4.0,
+                            "up_speed": 6.0
+                        }
+                    },
+                    "exposure_compensate": 0.0,
+                    "intelli_mode": 0,
+                    "max_acceleration": 0.0,
+                    "separate_support_exposure_delayed": 0.0,
+                    "material_scale_coeffs": [],
+                    "material_scale_coeffs_mode": 0,
+                    "material_scale_xyz": {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "z": 1.0
+                    }
+                },
+                "slicepara": {
+                    "anti_count": 1,
+                    "blur_level": 0,
+                    "bott_layers": 5,
+                    "bott_time": 35.0,
+                    "bott_time_dual": 35.0,
+                    "exposure_time": 3.0,
+                    "gray_level": 0,
+                    "off_time": 2.0,
+                    "use_indivi_layerpara": 0,
+                    "use_random_erode": 0,
+                    "zdown_speed": 6.0,
+                    "zthick": 0.05000000074505806,
+                    "zup_height": 6.0,
+                    "zup_speed": 4.0,
+                    "wait_before_lift": 0.0,
+                    "wait_after_lift": 0.0,
+                    "bott_off_time": 0.5,
+                    "bott_wait_before_lift": 0.0,
+                    "bott_wait_after_lift": 0.0
+                }
+            },
+            {
+                "version": "2",
+                "property": {
+                    "version": "4",
+                    "code": "15",
+                    "currency": "$",
+                    "price": 220.0,
+                    "type": "超韧树脂",
+                    "volume": 1000.0,
+                    "subfunc_code": 0,
+                    "density": 1.2000000476837159,
+                    "target_temperature": 25.0,
+                    "brand_name": "Anycubic",
+                    "resin_name": "tough_resin_ultra",
+                    "film_name": "NFEP",
+                    "setting_name": "normal_print",
+                    "name": "Anycubic@tough_resin_ultra@NFEP@normal_print"
+                },
+                "depth_penetration_curve": {
+                    "zthick_min": 0.009999999776482582,
+                    "zthick_max": 0.20000000298023225,
+                    "light_intensity": 9000.0,
+                    "safety_coefficient": 1.600000023841858,
+                    "current_tempcurve_selector": -1,
+                    "temperature_coefficients": []
+                },
+                "slice_extpara": {
+                    "version": "3",
+                    "multi_state_used": 0,
+                    "transition_layercount": 15,
+                    "transition_type": 0,
+                    "multi_state_paras": {
+                        "bott_0": {
+                            "down_speed": 3.0,
+                            "height": 5.0,
+                            "up_speed": 3.0
+                        },
+                        "bott_1": {
+                            "down_speed": 3.0,
+                            "height": 3.0,
+                            "up_speed": 3.0
+                        },
+                        "normal_0": {
+                            "down_speed": 3.0,
+                            "height": 3.0,
+                            "up_speed": 3.0
+                        },
+                        "normal_1": {
+                            "down_speed": 6.0,
+                            "height": 4.0,
+                            "up_speed": 6.0
+                        }
+                    },
+                    "exposure_compensate": 0.0,
+                    "intelli_mode": 0,
+                    "max_acceleration": 0.0,
+                    "separate_support_exposure_delayed": 0.0,
+                    "material_scale_coeffs": [],
+                    "material_scale_coeffs_mode": 0,
+                    "material_scale_xyz": {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "z": 1.0
+                    }
+                },
+                "slicepara": {
+                    "anti_count": 1,
+                    "blur_level": 0,
+                    "bott_layers": 5,
+                    "bott_time": 40.0,
+                    "bott_time_dual": 40.0,
+                    "exposure_time": 3.5999999046325685,
+                    "gray_level": 0,
+                    "off_time": 2.0,
+                    "use_indivi_layerpara": 0,
+                    "use_random_erode": 0,
+                    "zdown_speed": 6.0,
+                    "zthick": 0.05000000074505806,
+                    "zup_height": 6.0,
+                    "zup_speed": 4.0,
+                    "wait_before_lift": 0.0,
+                    "wait_after_lift": 0.0,
+                    "bott_off_time": 0.5,
+                    "bott_wait_before_lift": 0.0,
+                    "bott_wait_after_lift": 0.0
+                }
+            },
+            {
+                "version": "2",
+                "property": {
+                    "version": "4",
+                    "code": "17",
+                    "currency": "$",
+                    "price": 220.0,
+                    "type": "水洗树脂+",
+                    "volume": 1000.0,
+                    "subfunc_code": 0,
+                    "density": 1.2000000476837159,
+                    "target_temperature": 25.0,
+                    "brand_name": "Anycubic",
+                    "resin_name": "water_wash_resin+",
+                    "film_name": "NFEP",
+                    "setting_name": "normal_print",
+                    "name": "Anycubic@water_wash_resin+@NFEP@normal_print"
+                },
+                "depth_penetration_curve": {
+                    "zthick_min": 0.009999999776482582,
+                    "zthick_max": 0.20000000298023225,
+                    "light_intensity": 9000.0,
+                    "safety_coefficient": 1.600000023841858,
+                    "current_tempcurve_selector": -1,
+                    "temperature_coefficients": []
+                },
+                "slice_extpara": {
+                    "version": "3",
+                    "multi_state_used": 0,
+                    "transition_layercount": 15,
+                    "transition_type": 0,
+                    "multi_state_paras": {
+                        "bott_0": {
+                            "down_speed": 3.0,
+                            "height": 5.0,
+                            "up_speed": 3.0
+                        },
+                        "bott_1": {
+                            "down_speed": 3.0,
+                            "height": 3.0,
+                            "up_speed": 3.0
+                        },
+                        "normal_0": {
+                            "down_speed": 3.0,
+                            "height": 3.0,
+                            "up_speed": 3.0
+                        },
+                        "normal_1": {
+                            "down_speed": 6.0,
+                            "height": 4.0,
+                            "up_speed": 6.0
+                        }
+                    },
+                    "exposure_compensate": 0.0,
+                    "intelli_mode": 0,
+                    "max_acceleration": 0.0,
+                    "separate_support_exposure_delayed": 0.0,
+                    "material_scale_coeffs": [],
+                    "material_scale_coeffs_mode": 0,
+                    "material_scale_xyz": {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "z": 1.0
+                    }
+                },
+                "slicepara": {
+                    "anti_count": 1,
+                    "blur_level": 0,
+                    "bott_layers": 5,
+                    "bott_time": 35.0,
+                    "bott_time_dual": 35.0,
+                    "exposure_time": 3.200000047683716,
+                    "gray_level": 0,
+                    "off_time": 1.0,
+                    "use_indivi_layerpara": 0,
+                    "use_random_erode": 0,
+                    "zdown_speed": 6.0,
+                    "zthick": 0.05000000074505806,
+                    "zup_height": 6.0,
+                    "zup_speed": 4.0,
+                    "wait_before_lift": 0.0,
+                    "wait_after_lift": 0.0,
+                    "bott_off_time": 0.5,
+                    "bott_wait_before_lift": 0.0,
+                    "bott_wait_after_lift": 0.0
+                }
+            }
+        ],
+        "user_resins": [],
+        "active_resins": [
+            "Anycubic@abs_like_resin_v2@NFEP@normal_print"
+        ],
+        "firmware_calc_print_time": 1,
+        "firmware_calc_print_time_paras": {
+            "version": "1",
+            "MACHINE_AXIS_STEPS_PER_UNIT": [
+                10.0,
+                10.0,
+                3200.0,
+                10.0
+            ],
+            "MACHINE_BLOCK_BUFFER_SIZE": 32,
+            "MACHINE_DEFAULT_ACCELERATION": 100.0,
+            "MACHINE_DEFAULT_MINSEGMENTTIME": 20000,
+            "MACHINE_DEFAULT_XYJERK": 20.0,
+            "MACHINE_DEFAULT_ZJERK": 0.05000000074505806,
+            "MACHINE_GENERATE_FRAME_TIME": 254.0,
+            "MACHINE_MAX_ACCELERATION": [
+                1000,
+                1000,
+                40,
+                1000
+            ],
+            "MACHINE_MAX_FEEDRATE": [
+                200.0,
+                200.0,
+                200.0,
+                45.0
+            ],
+            "MACHINE_MAX_STEP_FREQUENCY": 256000,
+            "MACHINE_MINIMUM_PLANNER_SPEED": 0.05000000074505806,
+            "MACHINE_NOR_LAYER_DOWN_HEIGHT_DIV": 0.20000000298023225,
+            "MACHINE_NOR_LAYER_DOWN_SPEED_DIV": 0.20000000298023225,
+            "MACHINE_NOR_LAYER_UP_HEIGHT_DIV": 0.20000000298023225,
+            "MACHINE_NOR_LAYER_UP_SPEED_DIV": 0.20000000298023225,
+            "MACHINE_STEP_MUL": 1,
+            "MACHINE_TIME_COMPENSATE": 0.0,
+            "MACHINE_TIM_PRES": 60.0,
+            "MACHINE_TIM_RCC_CLK": 120.0
+        },
+        "firmware_calc_exp_time_paras": {
+            "precision_range_branch": [
+                0.0,
+                5.0,
+                25.0
+            ],
+            "precision_per_volume": 5.0,
+            "precision_coeff_value": [
+                0.024000000208616258,
+                0.009999999776482582,
+                -0.20000000298023225
+            ],
+            "energy_coeff": 0.0,
+            "machine_exposure_ton": 1.0
+        }
+    }
+}

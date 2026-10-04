@@ -31,7 +31,8 @@ export const settingHelp = {
 		title: 'Material Polymer',
 		body: [
 			'The exact plastic your part is printed in. The line under the material name lists its strength (tensile, in MPa — higher is stronger), the temperature it starts to soften at, and its density. The datasheet link has the full specs.',
-			'"Enclosed printer" materials such as ABS, ASA, nylon and polycarbonate warp in open air, so they are only offered on printers with a heated enclosure. Large-Scale FDM is open-frame, so it lists only materials that print without one.'
+			'"Enclosed printer" materials such as ABS, ASA, nylon and polycarbonate warp in open air, so they are only offered on printers with a heated enclosure. Large-Scale FDM is open-frame, so it lists only materials that print without one.',
+			'Each material is also approved for certain nozzle sizes only. If your current nozzle doesn’t suit the material you pick, it switches to the closest one that does.'
 		]
 	},
 	color: {
@@ -61,7 +62,8 @@ export const settingHelp = {
 		title: 'Nozzle Size',
 		body: [
 			'The diameter of the hole the plastic comes out of. A smaller nozzle draws thinner lines, so it captures small text, sharp corners and thin features, but prints much more slowly.',
-			'A larger nozzle lays down thick lines: faster and stronger walls, but it rounds off fine detail. Features thinner than the line width may be skipped — the model checks warn you about these.'
+			'A larger nozzle lays down thick lines: faster and stronger walls, but it rounds off fine detail. Features thinner than the line width may be skipped — the model checks warn you about these.',
+			"Not every filament works with every nozzle. Filled filaments (carbon or glass fiber, wood, marble, glitter) would clog a small nozzle, and some, like flexible TPU or light-weight foaming PLA, only print reliably at certain sizes. Sizes your material can't use are greyed out; switch materials to unlock them."
 		],
 		tip: '0.4 mm suits almost everything. Go smaller only for tiny detail, larger for big, chunky functional parts.'
 	},
@@ -252,6 +254,7 @@ export const settingHelp = {
 		title: 'Stock Material',
 		body: [
 			'CNC machining starts with a solid piece of material (the stock) and cuts away everything that is not your part with a spinning cutter. The result is a strong, precise part in a real engineering material.',
+			'The machine is programmed from your CAD file, so CNC needs a STEP (.step / .stp) file: export one from your CAD software. Mesh files (STL, OBJ, 3MF) can be previewed and estimated, but not ordered.',
 			'The price shown is the cheapest standard stock size for this material. Your part uses the smallest standard piece it fits in, and that whole piece is charged; parts too big for any standard size get stock cut to order.'
 		]
 	},
@@ -265,7 +268,7 @@ export const settingHelp = {
 	axes: {
 		title: 'Machining Axes',
 		body: [
-			'3-Axis cuts straight down into the stock from above. To reach other sides, the part is flipped and re-clamped; each flip is another setup that adds cost. Features on angled faces may not be reachable at all.',
+			'3-Axis cuts straight down into the stock from above. To reach other sides, the part is flipped and re-clamped; each flip is another setup. The first setup carries the full setup fee (fixturing, zeroing, programming); each extra one costs less, since the job is already prepared. Features on angled faces may not be reachable at all.',
 			'4-Axis holds a bar of stock on a rotating spindle, so the cutter can reach all the way around it in one setup. Better for round parts, side holes and wrap-around features.'
 		],
 		tip: 'Flat, plate-like parts suit 3-axis; round or many-sided parts suit 4-axis. The checks recommend one when it helps.'

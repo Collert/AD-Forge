@@ -22,6 +22,14 @@ export type Process = {
 	minFeature?: number;
 	/** Extrusion printers with a heated enclosure; open-frame ones only get filaments that don't need one. */
 	enclosed?: boolean;
+	/**
+	 * OrcaSlicer system printer the accurate quote slices for: the profile vendor folder, the
+	 * printer model (its machine presets are named "<printer> <nozzle> nozzle") and the build
+	 * plate it prints on (Orca's `curr_bed_type`). Extrusion processes without one can't be quoted yet.
+	 */
+	slicer?: { vendor: string; printer: string; plate: string };
+	/** Multiplier on the volume tiers' dollars off (CNC parts get twice the discount). */
+	tierScale?: number;
 	comingSoon?: boolean;
 };
 
@@ -75,6 +83,13 @@ export type Material = {
 	requiresEnclosure: boolean;
 	colors: ColorOption[];
 	datasheetUrl?: string;
+	/** Nozzle sizes (mm) the filament is approved for, from `custom.approved_nozzles`; unset allows every size. */
+	nozzles?: number[];
+	/**
+	 * OrcaSlicer filament preset name without its printer suffix (e.g. "Bambu PETG HF"), from the
+	 * product's `custom.orca_filament` metafield. Unset: matched from the product title.
+	 */
+	slicerPreset?: string;
 };
 
 /** A Shopify collection of filaments. */
@@ -82,7 +97,8 @@ export type MaterialCategory = { id: string; label: string; materials: Material[
 export type QualityOption = { id: string; label: string; layerHeight: number; note: string };
 export type InfillPreset = { value: number; label: string };
 export type NozzleOption = { size: number; note: string };
-export type PriceTier = { label: string; minQty: number; discount: number };
+/** A volume tier: `amountOff` dollars off every unit (times the process's `tierScale`) from `minQty` units. */
+export type PriceTier = { label: string; minQty: number; amountOff: number };
 export type ChoiceOption = { id: string; label: string; note: string };
 export type InfillPattern = ChoiceOption & {
 	/** Material used relative to grid at the same density. */
@@ -97,6 +113,8 @@ export type SupportPlacement = ChoiceOption & {
 export type SupportInterface = ChoiceOption & {
 	/** $ per gram of interface material; null = same as the part. */
 	pricePerGram: number | null;
+	/** A separate interface material: its density (g/cm³) and slicer preset, as on `Material`. */
+	material?: Pick<Material, 'density' | 'slicerPreset'> & { name: string; hex: string };
 };
 /** A photopolymer resin for SLA. */
 export type Resin = {
@@ -171,8 +189,10 @@ export type StockMaterial = {
 
 export type AxisMode = ChoiceOption & {
 	id: 'three' | 'four';
-	/** $ per setup (fixturing, probing, zeroing). */
-	setupFee: number;
+	/** $ for the first setup (fixturing, probing, zeroing, CAM). */
+	firstSetupFee: number;
+	/** $ for each further setup (flipping or re-clamping the same job). */
+	additionalSetupFee: number;
 	/** Minutes per setup. */
 	setupMinutes: number;
 	/** Material removal rate (mm³/min) by stock group. */
@@ -220,17 +240,17 @@ export type FuzzySkinMode = ChoiceOption & { timeFactor: number };
 export type NumberRange = { min: number; max: number; step: number };
 
 export const processes: Process[] = [
-	{ id: 'fdm', kind: 'extrusion', badge: 'FDM', title: 'FDM 3D Printing', subtitle: 'Rapid Engineering Grade', icon: 'layers', bed: { x: 255, y: 255, z: 255 }, bedLabel: 'Bed', enclosed: true },
+	{ id: 'fdm', kind: 'extrusion', badge: 'FDM', title: 'FDM 3D Printing', subtitle: 'Rapid Engineering Grade', icon: 'layers', bed: { x: 255, y: 255, z: 255 }, bedLabel: 'Bed', enclosed: true, slicer: { vendor: 'BBL', printer: 'Bambu Lab X1 Carbon', plate: 'Textured PEI Plate' } },
 	{ id: 'large-fdm', kind: 'extrusion', badge: 'Large FDM', title: 'Large-Scale FDM', subtitle: 'Build vol up to 450mm', icon: 'view_in_ar', bed: { x: 450, y: 450, z: 450 }, bedLabel: 'Bed', enclosed: false },
 	{ id: 'sla', kind: 'resin', badge: 'SLA', title: 'SLA Resin', subtitle: 'Ultra-smooth 25µm', icon: 'opacity', bed: { x: 150, y: 87, z: 160 }, bedLabel: 'Vat', minFeature: 0.3 },
-	{ id: 'cnc', kind: 'machining', badge: 'CNC', title: 'CNC Machining', subtitle: 'Metals, plastic & wood', icon: 'precision_manufacturing', bed: { x: 200, y: 200, z: 100 }, bedLabel: 'Envelope', minFeature: 1 },
+	{ id: 'cnc', kind: 'machining', badge: 'CNC', title: 'CNC Machining', subtitle: 'Metals, plastic & wood', icon: 'precision_manufacturing', bed: { x: 200, y: 200, z: 100 }, bedLabel: 'Envelope', minFeature: 1, tierScale: 2 },
 	{ id: 'pcb', kind: 'other', badge: 'PCB', title: 'PCB Fab', subtitle: '1 & 2 layers', icon: 'developer_board', bed: { x: 400, y: 400, z: 5 }, bedLabel: 'Panel', comingSoon: true },
 	{ id: 'laser', kind: 'other', badge: 'Laser', title: 'Laser Engraving', subtitle: 'CO2 & Fiber Beds', icon: 'flare', bed: { x: 600, y: 400, z: 20 }, bedLabel: 'Bed', comingSoon: true }
 ];
 
 const fdmProfile: ProcessProfile = {
-	machineRate: 3.2,
-	setupFee: 4,
+	machineRate: 4,
+	setupFee: 5,
 	lineWidthFactor: 1.125,
 	supportGramsPerCm2: 0.25,
 	supportInterfaceShare: 0.15,
@@ -251,7 +271,7 @@ export const largeMeshTriangles = 500_000;
 
 export const processProfiles: Record<string, ProcessProfile> = {
 	fdm: fdmProfile,
-	'large-fdm': { ...fdmProfile, machineRate: 5.5, setupFee: 8, baseFlow: { ...fdmProfile.baseFlow, gramsPerHour: 30 } }
+	'large-fdm': { ...fdmProfile, baseFlow: { ...fdmProfile.baseFlow, gramsPerHour: 30 } }
 };
 
 export const defaultProfile = fdmProfile;
@@ -321,7 +341,7 @@ export const fuzzySkinModes: FuzzySkinMode[] = [
 
 export const resinProfile: ResinProfile = {
 	machineRate: 4.5,
-	setupFee: 12,
+	setupFee: 8,
 	secondsPerLayer: 10,
 	supportMlPerCm2: 0.3,
 	overhangAngle: 50,
@@ -396,7 +416,7 @@ export const finestCornerTool = Math.min(
 
 export const machiningRates = {
 	/** $ per spindle hour. */
-	machineRate: 30
+	machineRate: 15
 };
 
 /** Stock groups in display order; only groups the store has stock for are shown. */
@@ -412,7 +432,8 @@ export const axisModes: AxisMode[] = [
 		id: 'three',
 		label: '3-Axis',
 		note: 'Top-down milling',
-		setupFee: 15,
+		firstSetupFee: 15,
+		additionalSetupFee: 8,
 		setupMinutes: 8,
 		removalRate: { metal: 350, plastic: 1200, composite: 600, wood: 1800 },
 		finishFeed: 1000,
@@ -425,7 +446,8 @@ export const axisModes: AxisMode[] = [
 		id: 'four',
 		label: '4-Axis',
 		note: 'Rotary, bar stock',
-		setupFee: 25,
+		firstSetupFee: 25,
+		additionalSetupFee: 12,
 		setupMinutes: 6,
 		removalRate: { metal: 280, plastic: 1000, composite: 500, wood: 1500 },
 		finishFeed: 800,
@@ -440,12 +462,13 @@ export const machiningDefaults = {
 	axes: 'three' as AxisMode['id']
 };
 
+/** Volume discounts as the store applies them at checkout ($ off each unit; doubled for CNC, see `tierScale`). */
 export const priceTiers: PriceTier[] = [
-	{ label: '1 – 4 units', minQty: 1, discount: 0 },
-	{ label: '5 – 9 units', minQty: 5, discount: 0.15 },
-	{ label: '10 – 24 units', minQty: 10, discount: 0.25 },
-	{ label: '25 – 49 units', minQty: 25, discount: 0.35 },
-	{ label: '50+ units', minQty: 50, discount: 0.45 }
+	{ label: '1 unit', minQty: 1, amountOff: 0 },
+	{ label: '2 – 5 units', minQty: 2, amountOff: 2 },
+	{ label: '6 – 10 units', minQty: 6, amountOff: 3 },
+	{ label: '11 – 50 units', minQty: 11, amountOff: 4 },
+	{ label: '51+ units', minQty: 51, amountOff: 5 }
 ];
 
 export const defaults = {

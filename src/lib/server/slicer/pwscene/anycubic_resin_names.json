@@ -1,0 +1,514 @@
+[
+    {
+        "brand_name": "Anycubic",
+        "code": "19",
+        "density": 1.05,
+        "description": [
+            {
+                "zh_cn": "韧性升级，强韧兼顾，高精度低收缩，色彩饱满，适合打印受力结构件。"
+            },
+            {
+                "en": "Upgraded toughness, balanced strength and toughness, high precision with low shrinkage, vibrant colors, ideal for printing load-bearing structural parts."
+            },
+            {
+                "kr": "Upgraded toughness, balanced strength and toughness, high precision with low shrinkage, vibrant colors, ideal for printing load-bearing structural parts."
+            }
+        ],
+        "name": "abs_like_resin_pro2",
+        "picture_path": "product/resins/picture/Anycubic_ABS_Like_Pro2.png",
+        "price": 28.99,
+        "printer_name": "Anycubic Photon Mono 4",
+        "translation": [
+            {
+                "zh_cn": "类ABS树脂 Pro 2"
+            },
+            {
+                "en": "ABS-Like Resin Pro 2"
+            },
+            {
+                "kr": "클래스 ABS 수지 Pro 2"
+            }
+        ],
+        "volume": 1000
+    },
+    {
+        "brand_name": "Anycubic",
+        "code": "19",
+        "density": 1.1,
+        "description": [
+            {
+                "zh_cn": "高强度，高韧性，可水洗，低气味，易成型，易拆支撑，适合打印受力结构件。"
+            },
+            {
+                "en": "High strength, high toughness, washable, low odor, easy to mold, and easy to remove supports, ideal for printing load-bearing structural parts."
+            },
+            {
+                "kr": "High strength, high toughness, washable, low odor, easy to mold, and easy to remove supports, ideal for printing load-bearing structural parts."
+            }
+        ],
+        "name": "abs_like_resin_v2",
+        "picture_path": "product/resins/picture/Anycubic_ABS_Like_V2.png",
+        "price": 24.99,
+        "printer_name": "Anycubic Photon Mono 4",
+        "translation": [
+            {
+                "zh_cn": "类ABS树脂 V2"
+            },
+            {
+                "en": "ABS-Like Resin V2"
+            },
+            {
+                "kr": "클래스 ABS 수지 V2"
+            }
+        ],
+        "volume": 1000
+    },
+    {
+        "brand_name": "Anycubic",
+        "code": "18",
+        "density": 1.13,
+        "description": [
+            {
+                "zh_cn": "生物相容性，固化后的模型可与人体皮肤接触而不过敏，低气味，强韧平衡，适合打印硅胶覆模零件。"
+            },
+            {
+                "en": "Biocompatibility, cured models can come into contact with skin without causing allergies, low odor, balanced strength and toughness, ideal for printing silicone overmolding parts."
+            },
+            {
+                "kr": "Biocompatibility, cured models can come into contact with skin without causing allergies, low odor, balanced strength and toughness, ideal for printing silicone overmolding parts."
+            }
+        ],
+        "name": "bio_resin",
+        "picture_path": "product/resins/picture/Anycubic_Bio.png",
+        "price": 39.99,
+        "printer_name": "Anycubic Photon Mono 4",
+        "translation": [
+            {
+                "zh_cn": "生物相容树脂"
+            },
+            {
+                "en": "Bio Resin"
+            },
+            {
+                "kr": "생체 적합성 수지"
+            }
+        ],
+        "volume": 1000
+    },
+    {
+        "brand_name": "Anycubic",
+        "code": "24",
+        "density": 1.08,
+        "description": [
+            {
+                "zh_cn": "可DIY调色，官方出具调色表与用户共创表，可支持100+颜色调试。"
+            },
+            {
+                "en": "DIY color-mixable, with official color mixing charts and user co-creation charts, supporting over 100 color combinations."
+            },
+            {
+                "kr": "DIY color-mixable, with official color mixing charts and user co-creation charts, supporting over 100 color combinations."
+            }
+        ],
+        "name": "diy_color_mixing_resin",
+        "picture_path": "product/resins/picture/Anycubic_DIY_Color.png",
+        "price": 29.99,
+        "printer_name": "Anycubic Photon Mono 4",
+        "translation": [
+            {
+                "zh_cn": "DIY 调色树脂"
+            },
+            {
+                "en": "DIY Color Mixing Resin"
+            },
+            {
+                "kr": "DIY 컬러 믹싱 수지"
+            }
+        ],
+        "volume": 1000
+    },
+    {
+        "brand_name": "Anycubic",
+        "code": "16",
+        "density": 1.15,
+        "description": [
+            {
+                "zh_cn": "超高精度，无像素纹，收缩小，适合打印表现细节要求较高的手办模型。"
+            },
+            {
+                "en": "Ultra-high precision, no pixelation, low shrinkage, ideal for printing figure models with high-detail requirements."
+            },
+            {
+                "kr": "Ultra-high precision, no pixelation, low shrinkage, ideal for printing figure models with high-detail requirements."
+            }
+        ],
+        "name": "dlp_craftsman_resin",
+        "picture_path": "product/resins/picture/Anycubic_DLP_Craftsman.png",
+        "price": 42.99,
+        "printer_name": "Anycubic Photon Mono 4",
+        "translation": [
+            {
+                "zh_cn": "DLP 红蜡树脂"
+            },
+            {
+                "en": "DLP Craftsman Resin"
+            },
+            {
+                "kr": "DLP 레드 왁스 수지"
+            }
+        ],
+        "volume": 1000
+    },
+    {
+        "brand_name": "Anycubic",
+        "code": "23",
+        "density": 1.05,
+        "description": [
+            {
+                "zh_cn": "耐黄性高，透光度强，坚韧易用，适合打印实心透明器件。"
+            },
+            {
+                "en": "High yellowing resistance, excellent light transmittance, tough and easy to use, ideal for printing solid transparent parts."
+            },
+            {
+                "kr": "High yellowing resistance, excellent light transmittance, tough and easy to use, ideal for printing solid transparent parts."
+            }
+        ],
+        "name": "high_clear_resin",
+        "picture_path": "product/resins/picture/Anycubic_High_Clear.png",
+        "price": 39.99,
+        "printer_name": "Anycubic Photon Mono 4",
+        "translation": [
+            {
+                "zh_cn": "高透树脂"
+            },
+            {
+                "en": "High Clear Resin"
+            },
+            {
+                "kr": "고투과수지"
+            }
+        ],
+        "volume": 1000
+    },
+    {
+        "brand_name": "Anycubic",
+        "code": "22",
+        "density": 1.14,
+        "description": [
+            {
+                "zh_cn": "低气味，超低粘度，超快打印速度，对比第一代韧性大幅度提升，适合快速打印对精度要求不高的大型cosplay道具。"
+            },
+            {
+                "en": "Low odor, ultra-low viscosity, ultra-fast printing speed, and significantly improved toughness compared to the first generation, ideal for rapid printing of large cosplay props with low precision requirements."
+            },
+            {
+                "kr": "Low odor, ultra-low viscosity, ultra-fast printing speed, and significantly improved toughness compared to the first generation, ideal for rapid printing of large cosplay props with low precision requirements."
+            }
+        ],
+        "name": "high_speed_resin_2.0",
+        "picture_path": "product/resins/picture/Anycubic_High_Speed_2.0.png",
+        "price": 35.99,
+        "printer_name": "Anycubic Photon Mono 4",
+        "translation": [
+            {
+                "zh_cn": "高速树脂 2.0"
+            },
+            {
+                "en": "High Speed Resin 2.0"
+            },
+            {
+                "kr": "고속수지 2.0"
+            }
+        ],
+        "volume": 1000
+    },
+    {
+        "brand_name": "Anycubic",
+        "code": "12",
+        "density": 1.09,
+        "description": [
+            {
+                "zh_cn": "植物成分，绿色环保低气味，韧性升级，适合对树脂气味敏感的场景。"
+            },
+            {
+                "en": "Plant-based ingredients, eco-friendly with low odor, significantly improved toughness, ideal for scenarios where users are sensitive to resin odors."
+            },
+            {
+                "kr": "Plant-based ingredients, eco-friendly with low odor, significantly improved toughness, ideal for scenarios where users are sensitive to resin odors."
+            }
+        ],
+        "name": "plant_based_resin_2.0",
+        "picture_path": "product/resins/picture/Anycubic_Plant_Based_2.0.png",
+        "price": 25.99,
+        "printer_name": "Anycubic Photon Mono 4",
+        "translation": [
+            {
+                "zh_cn": "植物基树脂 2.0"
+            },
+            {
+                "en": "Plant-Based Resin 2.0"
+            },
+            {
+                "kr": "식물기 수지 2.0"
+            }
+        ],
+        "volume": 1000
+    },
+    {
+        "brand_name": "Anycubic",
+        "code": "20",
+        "density": 1.14,
+        "description": [
+            {
+                "zh_cn": "耐高温不变形，适合打印高强度功能件和户外用品。"
+            },
+            {
+                "en": "Resistant to high temperatures without deformation, ideal for printing high-strength functional parts or outdoor products."
+            },
+            {
+                "kr": "Resistant to high temperatures without deformation, ideal for printing high-strength functional parts or outdoor products."
+            }
+        ],
+        "name": "rigid_100_resin",
+        "picture_path": "product/resins/picture/Anycubic_Rigid_High_Temperature.png",
+        "price": 39.99,
+        "printer_name": "Anycubic Photon Mono 4",
+        "translation": [
+            {
+                "zh_cn": "刚性耐温树脂"
+            },
+            {
+                "en": "Rigid 100 Resin"
+            },
+            {
+                "kr": "강성 내열성 수지"
+            }
+        ],
+        "volume": 1000
+    },
+    {
+        "brand_name": "Anycubic",
+        "code": "10",
+        "density": 1.13,
+        "description": [
+            {
+                "zh_cn": "入门之选，刚性好，成型速度快，精细度与上色效果好，适合打印各类模型。"
+            },
+            {
+                "en": "An entry-level choice with good rigidity, fast molding speed, excellent precision, and great coloring effect, ideal for printing various models."
+            },
+            {
+                "kr": "An entry-level choice with good rigidity, fast molding speed, excellent precision, and great coloring effect, ideal for printing various models."
+            }
+        ],
+        "name": "standard_resin",
+        "picture_path": "product/resins/picture/Anycubic_Standard.png",
+        "price": 21.99,
+        "printer_name": "Anycubic Photon Mono 4",
+        "translation": [
+            {
+                "zh_cn": "标准树脂"
+            },
+            {
+                "en": "Standard Resin"
+            },
+            {
+                "kr": "표준수지_빠른"
+            }
+        ],
+        "volume": 1000
+    },
+    {
+        "brand_name": "Anycubic",
+        "code": "10",
+        "density": 1.05,
+        "description": [
+            {
+                "zh_cn": "经典升级，高精度，高韧性，低气味，颜色多样，保质期长，适合打印各类模型。"
+            },
+            {
+                "en": "Classic upgraded version with high precision, high toughness, low odor, various colors and long shelf life, ideal for printing various models."
+            },
+            {
+                "kr": "Classic upgraded version with high precision, high toughness, low odor, various colors and long shelf life, ideal for printing various models."
+            }
+        ],
+        "name": "standard_resin+",
+        "picture_path": "product/resins/picture/Anycubic_Standard_Plus.png",
+        "price": 23.99,
+        "printer_name": "Anycubic Photon Mono 4",
+        "translation": [
+            {
+                "zh_cn": "标准树脂 +"
+            },
+            {
+                "en": "Standard Resin +"
+            },
+            {
+                "kr": "표준수지 +"
+            }
+        ],
+        "volume": 1000
+    },
+    {
+        "brand_name": "Anycubic",
+        "code": "10",
+        "density": 1.05,
+        "description": [
+            {
+                "zh_cn": "适用范围广，高强度，韧性好，耐弯折，适合打印各类模型。"
+            },
+            {
+                "en": "Wide application range, high strength, good toughness, flexible and resistant to bending, ideal for printing various models."
+            },
+            {
+                "kr": "Wide application range, high strength, good toughness, flexible and resistant to bending, ideal for printing various models."
+            }
+        ],
+        "name": "standard_resin_v2",
+        "picture_path": "product/resins/picture/Anycubic_Standard_V2.png",
+        "price": 23.99,
+        "printer_name": "Anycubic Photon Mono 4",
+        "translation": [
+            {
+                "zh_cn": "标准树脂 V2"
+            },
+            {
+                "en": "Standard Resin V2"
+            },
+            {
+                "kr": "표준수지 V2"
+            }
+        ],
+        "volume": 1000
+    },
+    {
+        "brand_name": "Anycubic",
+        "code": "21",
+        "density": 1.08,
+        "description": [
+            {
+                "zh_cn": "添加纳米级陶瓷粉，具备雕像哑光质感，打印的模型图案精细，表面质量光滑，模型尺寸误差小，特别适用于微缩模型和戒指、耳环等首饰。"
+            },
+            {
+                "en": "Infused with nano-scale ceramic powder, featuring a statue-like matte finish, highly detailed printed models, smooth surface quality, and minimal dimensional deviation, especially ideal for scale models and jewelry such as rings and earrings."
+            },
+            {
+                "kr": "Infused with nano-scale ceramic powder, featuring a statue-like matte finish, highly detailed printed models, smooth surface quality, and minimal dimensional deviation, especially ideal for scale models and jewelry such as rings and earrings."
+            }
+        ],
+        "name": "texture_resin",
+        "picture_path": "product/resins/picture/Anycubic_Texture.png",
+        "price": 30.99,
+        "printer_name": "Anycubic Photon Mono 4",
+        "translation": [
+            {
+                "zh_cn": "质感树脂"
+            },
+            {
+                "en": "Texture Resin"
+            },
+            {
+                "kr": "질감 수지"
+            }
+        ],
+        "volume": 1000
+    },
+    {
+        "brand_name": "Anycubic",
+        "code": "15",
+        "density": 1.1,
+        "description": [
+            {
+                "zh_cn": "低气味，高精细度，强度适中，韧性极佳，适合打印需要一定强度，耐冲击的模型。"
+            },
+            {
+                "en": "Low odor, high precision, moderate strength, and excellent toughness, ideal for printing models requiring a certain level of strength and impact resistance."
+            },
+            {
+                "kr": "Low odor, high precision, moderate strength, and excellent toughness, ideal for printing models requiring a certain level of strength and impact resistance."
+            }
+        ],
+        "name": "tough_resin_2.0",
+        "picture_path": "product/resins/picture/Anycubic_Tough_2.0.png",
+        "price": 39.99,
+        "printer_name": "Anycubic Photon Mono 4",
+        "translation": [
+            {
+                "zh_cn": "韧性树脂 2.0"
+            },
+            {
+                "en": "Tough Resin 2.0"
+            },
+            {
+                "kr": "인성수지 2.0"
+            }
+        ],
+        "volume": 1000
+    },
+    {
+        "brand_name": "Anycubic",
+        "code": "15",
+        "density": 1.05,
+        "description": [
+            {
+                "zh_cn": "耐老化，耐弯折，柔韧易回弹，亲肤手感佳，适合打印与皮肤接触贴合和需要柔性应用的模型。"
+            },
+            {
+                "en": "Aging resistance, bending resistance, flexible and easy to rebound, skin-friendly with good hand feel, ideal for printing models that are in contact with skin or require flexible applications."
+            },
+            {
+                "kr": "Aging resistance, bending resistance, flexible and easy to rebound, skin-friendly with good hand feel, ideal for printing models that are in contact with skin or require flexible applications."
+            }
+        ],
+        "name": "tough_resin_ultra",
+        "picture_path": "product/resins/picture/Anycubic_Tough_Ultra.png",
+        "price": 45.99,
+        "printer_name": "Anycubic Photon Mono 4",
+        "translation": [
+            {
+                "zh_cn": "超韧树脂"
+            },
+            {
+                "en": "Tough Resin Ultra"
+            },
+            {
+                "kr": "초강력 수지"
+            }
+        ],
+        "volume": 1000
+    },
+    {
+        "brand_name": "Anycubic",
+        "code": "17",
+        "density": 1.15,
+        "description": [
+            {
+                "zh_cn": "可水洗，成型速度快，低气味，易清洗，适合打印不想用酒精清洗的模型。"
+            },
+            {
+                "en": "Washable, fast molding speed, low odor, easy to clean, ideal for printing models that do not require alcohol cleaning."
+            },
+            {
+                "kr": "Washable, fast molding speed, low odor, easy to clean, ideal for printing models that do not require alcohol cleaning."
+            }
+        ],
+        "name": "water_wash_resin+",
+        "picture_path": "product/resins/picture/Anycubic_Water_Wash_Plus.png",
+        "price": 23.99,
+        "printer_name": "Anycubic Photon Mono 4",
+        "translation": [
+            {
+                "zh_cn": "水洗树脂 +"
+            },
+            {
+                "en": "Water-Wash Resin +"
+            },
+            {
+                "kr": "워싱 수지 +"
+            }
+        ],
+        "volume": 1000
+    }
+]

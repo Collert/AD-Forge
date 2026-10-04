@@ -47,7 +47,9 @@ const PRODUCT_METAFIELDS = [
 	'cnc_3_axis_compatible',
 	'cnc_4_axis_compatible',
 	'stock_material',
-	'stock_shape'
+	'stock_shape',
+	'orca_filament',
+	'approved_nozzles'
 ];
 const VARIANT_METAFIELDS = ['color', 'secondary_color', 'thickness_mm', 'width_mm', 'length_mm', 'diameter_mm'];
 

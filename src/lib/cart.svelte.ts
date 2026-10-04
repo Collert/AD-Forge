@@ -11,6 +11,12 @@ import { env } from '$env/dynamic/public';
 
 const API_VERSION = '2026-07';
 const STORAGE_KEY = 'ad-forge:cart-id';
+const NEW_DESIGNS_KEY = 'ad-forge:new-designs';
+/**
+ * How long Shopify takes to start applying automatic discounts (volume
+ * pricing) to a product that was just created, ms.
+ */
+export const NEW_DESIGN_DISCOUNT_DELAY_MS = 3 * 60_000;
 /** Quantity edits wait this long for more clicks before saving. */
 const QUANTITY_DEBOUNCE_MS = 400;
 export const MAX_LINE_QUANTITY = 999;
@@ -174,6 +180,53 @@ function toDiscounts(allocations: DiscountPayload[]): CartDiscount[] {
 		byTitle.set(title, (byTitle.get(title) ?? 0) + amount);
 	}
 	return [...byTitle].map(([title, amount]) => ({ title, amount }));
+}
+
+/** Remember a just-created design's variant, so the cart can explain its missing bulk pricing. */
+export function markNewDesign(variantId: string) {
+	const designs = newDesigns();
+	designs[variantId] = Date.now();
+	try {
+		localStorage.setItem(NEW_DESIGNS_KEY, JSON.stringify(designs));
+	} catch {
+		// Storage blocked: the notice just won't show.
+	}
+}
+
+/** Variants created within NEW_DESIGN_DISCOUNT_DELAY_MS, with when; older ones are dropped. */
+function newDesigns(): Record<string, number> {
+	try {
+		const all: Record<string, number> = JSON.parse(localStorage.getItem(NEW_DESIGNS_KEY) ?? '{}');
+		return Object.fromEntries(Object.entries(all).filter(([, at]) => Date.now() - at < NEW_DESIGN_DISCOUNT_DELAY_MS));
+	} catch {
+		return {};
+	}
+}
+
+/**
+ * A line for a design created moments ago, ordered in a quantity that should
+ * get bulk pricing but doesn't yet, because Shopify hasn't caught up.
+ */
+export function awaitingBulkPricing(line: CartLine) {
+	return line.quantity > 1 && !line.discounts.length && line.variantId in newDesigns();
+}
+
+/**
+ * Ask Shopify to price these lines again (saving them unchanged makes it re-run
+ * automatic discounts). Skipped while the customer has edits of their own pending.
+ */
+export async function repriceLines(lineIds: string[]) {
+	if (!cart.id || cart.syncing > 0 || !lineIds.length) return;
+	const lines = cart.lines.filter((l) => lineIds.includes(l.id)).map((l) => ({ id: l.id, quantity: l.quantity }));
+	try {
+		const data = await storefront<{ cartLinesUpdate: CartResult }>(
+			`mutation($id: ID!, $lines: [CartLineUpdateInput!]!) { cartLinesUpdate(cartId: $id, lines: $lines) { cart { ${CART_FIELDS} } userErrors { message } } }`,
+			{ id: cart.id, lines }
+		);
+		if (cart.syncing === 0 && data.cartLinesUpdate.cart) apply(data.cartLinesUpdate.cart);
+	} catch {
+		// Try again on the next round.
+	}
 }
 
 /** True while a line's quantity differs from what Shopify last priced. */

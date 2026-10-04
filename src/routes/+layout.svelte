@@ -32,7 +32,7 @@
 				<a href="/make/fdm">Workbench</a>
 				<a href="/library" class:current={page.url.pathname.startsWith('/library')}>My Designs</a>
 				<a href="/#services">Services</a>
-				<a href="/#quote">Materials Library</a>
+				<a href="https://adbits.ca/collections/custom-prints">Materials Library</a>
 			</nav>
 		</div>
 		<div class="header-right">
@@ -92,7 +92,8 @@
 
 	.header-inner {
 		height: 4rem;
-		padding: 0 var(--gutter-desktop);
+		/* Clear of the notch in landscape (the page opts into safe-area insets). */
+		padding: 0 max(var(--gutter-desktop), env(safe-area-inset-right, 0px)) 0 max(var(--gutter-desktop), env(safe-area-inset-left, 0px));
 		display: flex;
 		align-items: center;
 		justify-content: space-between;

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { cart, cartQuantity, isRepricing, removeLine, restoreCart, type CartDiscount } from '$lib/cart.svelte';
+	import { awaitingBulkPricing, cart, cartQuantity, isRepricing, removeLine, repriceLines, restoreCart, type CartDiscount } from '$lib/cart.svelte';
 	import QuantityStepper from './QuantityStepper.svelte';
 
 	/** Floating cart summary plus a side panel to edit quantities, remove items and check out. */
@@ -17,8 +17,26 @@
 	/** Prices are being recalculated by Shopify after an edit. */
 	let repricing = $derived(cart.syncing > 0 || cart.lines.some(isRepricing));
 
+	/** Ticks while a notice is up, so it disappears once the delay has passed. */
+	let clock = $state(Date.now());
+	/** Lines of just-created designs whose bulk discount Shopify hasn't started applying. */
+	let awaitingBulk = $derived((void clock, cart.lines.filter(awaitingBulkPricing)));
+	let awaitingIds = $derived(awaitingBulk.map((l) => l.id).join());
+
 	onMount(() => {
 		restoreCart();
+	});
+
+	// Until Shopify applies their discount, ask it to reprice those lines every 30 s.
+	// `awaitingBulkPricing` stops matching once the discount shows or the delay has passed.
+	$effect(() => {
+		if (!awaitingIds) return;
+		const ids = awaitingIds.split(',');
+		const timer = setInterval(() => {
+			clock = Date.now();
+			repriceLines(ids);
+		}, 30_000);
+		return () => clearInterval(timer);
 	});
 
 	$effect(() => {
@@ -56,6 +74,16 @@
 
 		{#if cart.error}
 			<p class="error"><span class="material-symbols-outlined">error</span>{cart.error}</p>
+		{/if}
+
+		{#if awaitingBulk.length}
+			<p class="notice">
+				<span class="material-symbols-outlined">schedule</span>
+				<span>
+					Your new {awaitingBulk.length === 1 ? 'design is' : 'designs are'} still being set up in our store. Bulk pricing for
+					{awaitingBulk.length === 1 ? 'it' : 'them'} will kick in within a couple of minutes; the cart updates by itself.
+				</span>
+			</p>
 		{/if}
 
 		{#if cart.lines.length}
@@ -130,10 +158,11 @@
 </dialog>
 
 <style>
+	/* Clear of the home indicator and the browser's bottom toolbar (safe-area inset). */
 	.cart-bar {
 		position: fixed;
 		left: 50%;
-		bottom: var(--space-lg);
+		bottom: calc(var(--space-lg) + env(safe-area-inset-bottom, 0px));
 		z-index: 40;
 		transform: translateX(-50%);
 		display: flex;
@@ -170,6 +199,18 @@
 
 	.bar-cta .material-symbols-outlined {
 		font-size: 18px;
+	}
+
+	/* Phones: a full-width bar, raised a little more so it isn't lost at the screen's edge. */
+	@media (max-width: 640px) {
+		.cart-bar {
+			left: var(--space-md);
+			right: var(--space-md);
+			bottom: calc(var(--space-xl) + env(safe-area-inset-bottom, 0px));
+			transform: translateY(-50%);
+			max-width: none;
+			justify-content: space-between;
+		}
 	}
 
 	/* ---------- Drawer ---------- */
@@ -248,6 +289,22 @@
 		background: var(--error-container);
 		color: var(--on-error-container);
 		font-size: 13px;
+	}
+
+	.notice {
+		display: flex;
+		gap: var(--space-sm);
+		margin: var(--space-md) var(--space-lg) 0;
+		padding: var(--space-sm) var(--space-md);
+		border-radius: var(--radius-md);
+		background: var(--secondary-tint);
+		color: var(--on-secondary-container);
+		font-size: 13px;
+		line-height: 18px;
+	}
+
+	.notice .material-symbols-outlined {
+		font-size: 18px;
 	}
 
 	.error .material-symbols-outlined {
@@ -365,7 +422,7 @@
 		display: flex;
 		flex-direction: column;
 		gap: var(--space-sm);
-		padding: var(--space-md) var(--space-lg) var(--space-lg);
+		padding: var(--space-md) var(--space-lg) calc(var(--space-lg) + env(safe-area-inset-bottom, 0px));
 		border-top: 1px solid var(--surface-container-high);
 		background: var(--surface-container-low);
 	}

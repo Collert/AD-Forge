@@ -4,6 +4,7 @@
 	import { goto } from '$app/navigation';
 	import { processes } from '$lib/catalog/config';
 	import { addToCart, cart, lineFor } from '$lib/cart.svelte';
+	import { lowestUnitPrice } from '$lib/pricing/tiers';
 	import QuantityStepper from '$lib/components/QuantityStepper.svelte';
 	import type { DesignStatus, DesignsResult, FinalizedDesign } from '$lib/server/designs';
 	import { deletePart, listParts, type PartRecord } from '$lib/storage/parts';
@@ -425,6 +426,12 @@
 											<span class="price">{money(design.price)} <small>/ unit</small></span>
 										{/if}
 									</div>
+									{#if design.price != null}
+										{@const lowest = lowestUnitPrice(design.price, processes.find((p) => p.id === design.processId)?.tierScale)}
+										{#if lowest}
+											<span class="as-low-as">As low as <strong>{money(lowest.price)}</strong> each at {lowest.tier.label}</span>
+										{/if}
+									{/if}
 									<div class="actions">
 										{#if inCart}
 											<QuantityStepper line={inCart} compact />
@@ -1003,6 +1010,14 @@
 		flex-direction: column;
 		gap: var(--space-sm);
 		padding-top: var(--space-sm);
+	}
+
+	.as-low-as {
+		margin-top: calc(-1 * var(--space-xs));
+		align-self: flex-end;
+		font-size: 11px;
+		line-height: 14px;
+		color: var(--on-secondary-container);
 	}
 
 	.dock-line {
