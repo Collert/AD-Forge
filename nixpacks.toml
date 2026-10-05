@@ -32,6 +32,7 @@ aptPkgs = [
 	"libgstreamer1.0-0",
 	"libgstreamer-plugins-base1.0-0",
 	"libsecret-1-0",
+	"libsm6",
 	"locales"
 ]
 
@@ -45,6 +46,8 @@ cmds = [
 	"cd /opt/orca && ./OrcaSlicer.AppImage --appimage-extract > /dev/null && rm OrcaSlicer.AppImage",
 	# Fail the build here, not on the first customer quote, if the paths or libraries are wrong.
 	"test -x \"$ORCA_SLICER_PATH\" && test -d \"$ORCA_PROFILES_DIR/BBL\"",
+	# List every missing system library at once (if any) before the check below fails on the first.
+	"ldd /opt/orca/squashfs-root/bin/orca-slicer | grep 'not found' || true",
 	"\"$ORCA_SLICER_PATH\" --help > /dev/null"
 ]
 
