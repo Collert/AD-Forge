@@ -15,6 +15,9 @@ DATA_DIR = "/app/data"
 BODY_SIZE_LIMIT = "110M"
 
 [phases.setup]
+# Nixpacks' bundled nixpkgs has no nodejs_24, so install Node from a newer snapshot
+# (nixos-25.11, which ships Node 24.18).
+nixpkgsArchive = "b6018f87da91d19d0ab4cf979885689b469cdd41"
 # Libraries the AppImage expects from the system (it bundles the rest). The command line
 # doesn't open a window, but the binary still links against GTK / WebKit / GL.
 aptPkgs = [
