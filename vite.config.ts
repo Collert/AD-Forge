@@ -8,6 +8,6 @@ export default defineConfig({
 	server: {
 		// Hostnames only (no protocol or port). The leading dot allows every subdomain:
 		// quick-tunnel URLs change each time cloudflared starts.
-		allowedHosts: ['.trycloudflare.com']
+		allowedHosts: ['.trycloudflare.com', 'forge.adbits.ca']
 	}
 });
