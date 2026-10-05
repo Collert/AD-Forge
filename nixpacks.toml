@@ -2,8 +2,9 @@
 # See docs/slicer-scaling.md for how slicing works.
 
 [variables]
-# Vite 7 needs Node 20.19+; without this Nixpacks falls back to Node 18 and the build fails.
-NIXPACKS_NODE_VERSION = "22"
+# Vite 7 needs Node ^20.19 || ^22.12 || >=24. Nixpacks' "22" is 22.11 (too old) and its
+# default is 18, so pin 24.
+NIXPACKS_NODE_VERSION = "24"
 # Keep in step with the OrcaSlicer you use on the desktop, so saved 3MF files open there cleanly.
 ORCA_VERSION = "2.4.2"
 ORCA_SLICER_PATH = "/opt/orca/squashfs-root/AppRun"
