@@ -38,8 +38,9 @@ export const settingHelp = {
 	color: {
 		title: 'Variant / Color',
 		body: [
-			'The color of the filament. Each color is a separate spool, so stock and occasionally price differ between colors.',
-			'Colors marked Backorder are not on hand; we order them from the manufacturer when you place your order, which can add a few days.'
+			'The color of the filament. Each color is a separate spool, so stock and occasionally price differ between colors. Some materials also come in more than one finish, type or hardness (for example PLA Basic or Matte); pick that first to see the colors it comes in.',
+			'Colors marked Not in stock don’t have enough on hand for your part. If our supplier has given us a delivery date, we show when the material should arrive; otherwise it usually ships in about 3–5 days.',
+			'Nozzle sizes can differ between finishes of the same material, so changing it may switch your nozzle to the closest size it allows.'
 		]
 	},
 

@@ -20,6 +20,7 @@ import {
 	type StockPiece,
 	type SupportInterface
 } from '$lib/catalog/config';
+import { parseNozzles } from '$lib/catalog/availability';
 import { filamentTraits, hasStockTraits, resinTraits, stockMaterialTraits } from './material-traits';
 import {
 	CNC_STOCK_TYPE,
@@ -53,6 +54,7 @@ export async function getCatalog(): Promise<Catalog> {
 
 async function buildCatalog(): Promise<Catalog> {
 	const { products, collections } = await fetchStoreData();
+	// Only `3D Print material` products (the Storefront API serves ACTIVE products only).
 	const printMaterials = products.filter((p) => p.productType === PRINT_MATERIAL_TYPE && p.availableForSale);
 	const resinProducts = printMaterials.filter(isResin);
 	const filaments = printMaterials.filter((p) => !isResin(p));
@@ -66,7 +68,8 @@ async function buildCatalog(): Promise<Catalog> {
 	const supportInterfaces: SupportInterface[] = [supportInterfaceOptions.same];
 	if (pvaMaterial) {
 		const { name, density, slicerPreset, pricePerGram, colors } = pvaMaterial;
-		supportInterfaces.push({ ...supportInterfaceOptions.soluble, pricePerGram, material: { name, density, slicerPreset, hex: colors[0].hex } });
+		const color = colors.find((c) => c.inStock) ?? colors[0];
+		supportInterfaces.push({ ...supportInterfaceOptions.soluble, pricePerGram, material: { name, density, slicerPreset, hex: color.hex, color } });
 	}
 
 	return {
@@ -125,20 +128,32 @@ function toMaterial(product: ShopifyProduct): Material | null {
 		inStock: colors.some((c) => c.inStock),
 		requiresEnclosure,
 		colors,
+		styleOption: styleOptionOf(product, colors),
 		datasheetUrl: fields.technical_datasheet,
-		slicerPreset: fields.orca_filament?.trim() || undefined,
-		nozzles: approvedNozzles(fields.approved_nozzles)
+		datasheetUrls: datasheets(fields.technical_datasheets, fields.technical_datasheet),
+		slicerPreset: fields.orca_filament?.trim() || undefined
 	};
 }
 
-/** `custom.approved_nozzles` (a JSON list like ["0.4","0.6"]) as sizes; undefined when unset or unreadable. */
-function approvedNozzles(value: string | undefined): number[] | undefined {
+/** The non-colour option of a two-option product (Finish, Style, Type, Hardness…), with its values in store order. */
+function styleOptionOf(product: ShopifyProduct, colors: ColorOption[]): Material['styleOption'] {
+	const name = optionNames(product.variants.nodes).style;
+	if (!name) return undefined;
+	const values = [...new Set(colors.map((c) => c.style).filter((v) => v !== undefined))];
+	return values.length ? { name, values } : undefined;
+}
+
+/** `custom.technical_datasheets` (a JSON list of URLs), falling back to the single `custom.technical_datasheet`. */
+function datasheets(list: string | undefined, single: string | undefined): string[] {
+	let urls: string[] = [];
 	try {
-		const sizes = (JSON.parse(value ?? '') as unknown[]).map(Number).filter((n) => Number.isFinite(n) && n > 0);
-		return sizes.length ? sizes : undefined;
+		const parsed = JSON.parse(list ?? '');
+		if (Array.isArray(parsed)) urls = parsed.filter((u): u is string => typeof u === 'string' && /^https?:\/\//.test(u));
 	} catch {
-		return undefined;
+		// Unset or unreadable: use the single sheet.
 	}
+	if (!urls.length && single) urls = [single];
+	return [...new Set(urls)];
 }
 
 /** "Tensile: 39 MPa • Heat Deflect: 55°C • 1.24 g/cm³", from what the description states. */
@@ -269,17 +284,39 @@ function medianPricePerCm3(pieces: StockPiece[], bars: StockBar[]) {
 
 // ---------- Shared ----------
 
+/**
+ * Which option of a product's variants is the colour and which (on two-option products such as
+ * PLA's Finish + Colour) the style. A lone non-colour option ("Title") is neither.
+ */
+function optionNames(variants: ShopifyVariant[]): { color?: string; style?: string } {
+	const names = [...new Set(variants.flatMap((v) => v.selectedOptions.map((o) => o.name)))];
+	const color = names.find((n) => /colou?r/i.test(n)) ?? (names.length > 1 ? names[names.length - 1] : undefined);
+	const style = names.find((n) => n !== color && names.length > 1);
+	return { color, style };
+}
+
 /** Orderable colour variants of a product. */
 function swatches(product: ShopifyProduct): ColorOption[] {
+	const options = optionNames(product.variants.nodes);
 	return product.variants.nodes
 		.filter((v) => v.availableForSale)
-		.map((v) => ({
-			id: v.id,
-			name: v.title === 'Default Title' ? 'Standard' : v.title,
-			hex: variantFields(v).color ?? FALLBACK_HEX,
-			price: Number(v.price.amount),
-			inStock: isInStock(v)
-		}));
+		.map((v) => {
+			const fields = variantFields(v);
+			const option = (name: string | undefined) => (name ? v.selectedOptions.find((o) => o.name === name)?.value : undefined);
+			const label = v.title === 'Default Title' ? 'Standard' : v.title;
+			return {
+				id: v.id,
+				name: option(options.color) ?? label,
+				label,
+				style: option(options.style),
+				hex: fields.color ?? FALLBACK_HEX,
+				price: Number(v.price.amount),
+				inStock: isInStock(v),
+				available: v.quantityAvailable,
+				supplierEta: fields.supplier_eta?.trim() || undefined,
+				nozzles: parseNozzles(fields.approved_nozzles)
+			};
+		});
 }
 
 /** On hand (untracked inventory counts as on hand); orderable variants without stock are backorders. */

@@ -80,6 +80,7 @@
 		type ResolvedOptions
 	} from '$lib/pricing/estimate';
 	import { lowestUnitPrice, tierAmountOff, tierUnitPrice } from '$lib/pricing/tiers';
+	import { allowedNozzles as nozzlesFor, availability, materialReadyDate, revalidateNozzle, type Availability } from '$lib/catalog/availability';
 	import { finalizeDesign, isOrderable, requestQuote, RequestError, type FinalizedDesign, type Quote } from '$lib/pricing/quote';
 	import { addToCart, cart, cartQuantity, markNewDesign } from '$lib/cart.svelte';
 
@@ -148,20 +149,27 @@
 	let category = $derived(byId(materialCategories, categoryId));
 	let baseMaterial = $derived(byId(category.materials, materialId));
 	let color = $derived(pickColor(baseMaterial.colors, colorId));
+	/** Colours offered for the chosen style (Finish / Type / Hardness…); every colour on single-option products. */
+	let styleColors = $derived(baseMaterial.colors.filter((c) => c.style === color.style));
 	/** The filament as priced and stocked in the chosen color. */
 	let material = $derived<Material>({ ...baseMaterial, pricePerGram: color.price, inStock: color.inStock });
 	let colorHex = $derived(color.hex);
 	let quality = $derived(qualities.find((q) => q.id === qualityId)!);
-	/** Nozzle sizes the chosen filament is approved for. */
-	let allowedNozzles = $derived(material.nozzles ?? nozzles.map((n) => n.size));
+	/** Nozzle sizes the chosen colour variant is approved for (its `custom.approved_nozzles`). */
+	let allowedNozzles = $derived(
+		nozzlesFor(
+			color.nozzles,
+			nozzles.map((n) => n.size)
+		)
+	);
 
-	// A filament that can't use the current nozzle moves it to the nearest size it can (0.4 on a tie).
+	// When the variant changes (material, style or colour) and can't use the current nozzle, move
+	// to the nearest size it can (0.4 on a tie).
 	$effect(() => {
 		const allowed = allowedNozzles;
 		const current = untrack(() => fdm.nozzle);
-		if (allowed.includes(current)) return;
-		const nearest = (n: number) => Math.abs(n - current) + Math.abs(n - defaults.nozzle) / 100;
-		fdm.nozzle = [...allowed].sort((a, b) => nearest(a) - nearest(b))[0];
+		const next = revalidateNozzle(current, allowed, defaults.nozzle);
+		if (next !== current) fdm.nozzle = next;
 	});
 	let settings = $derived<PrintSettings>({ ...fdm, layerHeight: quality.layerHeight });
 
@@ -299,6 +307,22 @@
 	let quoteCurrent = $derived(quote !== null && quote.key === configKey);
 	let quoteStale = $derived(quote !== null && !quoteCurrent);
 	let pricing = $derived(quoteCurrent ? quote!.result : estimate);
+
+	// ---------- Filament stock: is there enough of each material for this job? ----------
+
+	/** The soluble PVA interface, when the job prints one. */
+	let solubleInterface = $derived(
+		!isResin && !isCnc && fdm.supportPlacement !== 'none' ? options.supportInterface.material : undefined
+	);
+	/** Grams of each filament the job needs; before the part is measured, any stock at all counts. */
+	let interfaceGrams = $derived(pricing?.interfaceGrams ?? 0);
+	let partGrams = $derived(pricing ? Math.max(pricing.grams - interfaceGrams, 0) : 1);
+	let materialAvailability = $derived(availability(color, partGrams));
+	let interfaceAvailability = $derived<Availability | null>(
+		solubleInterface && (!pricing || interfaceGrams > 0) ? availability(solubleInterface.color, pricing ? interfaceGrams : 1) : null
+	);
+	/** For multi-material jobs (part + soluble interface), when every material will be on hand. */
+	let jobReady = $derived(interfaceAvailability ? materialReadyDate([materialAvailability, interfaceAvailability]) : null);
 	/** The original STEP upload, which CNC parts are machined from (kept with the part in browser storage). */
 	let stepFile = $state.raw<File | null>(null);
 	// A new upload brings its own STEP file (or none); a reopened part gets its stored one in `restore`.
@@ -1246,11 +1270,18 @@
 		selectMaterial(byId(materialCategories, id).materials[0].id, keepColor);
 	}
 
-	/** Switch filament, keeping a color of the same name if the new one has it. */
-	function selectMaterial(id: string, keepColor = color.name) {
+	/** Switch filament, keeping a color (and style) of the same name if the new one has it. */
+	function selectMaterial(id: string, keepColor = color.name, keepStyle = color.style) {
 		const next = byId(category.materials, id);
 		materialId = next.id;
-		colorId = next.colors.find((c) => c.name === keepColor)?.id ?? '';
+		const same = next.colors.filter((c) => c.name === keepColor);
+		colorId = (same.find((c) => c.style === keepStyle) ?? same.find((c) => c.inStock) ?? same[0])?.id ?? '';
+	}
+
+	/** Switch style (Finish / Type / Hardness…), keeping the colour if that style has it. */
+	function selectStyle(style: string) {
+		const options = baseMaterial.colors.filter((c) => c.style === style);
+		colorId = (options.find((c) => c.name === color.name) ?? options.find((c) => c.inStock) ?? options[0])?.id ?? colorId;
 	}
 </script>
 
@@ -1969,17 +2000,23 @@
 			</div>
 			<div class="material-text">
 				<div class="material-name">
-					<span>{material.name} — {color.name}</span>
-					<span class="stock" class:out={!material.inStock}>{material.inStock ? 'In Stock' : 'Backorder'}</span>
+					<span>{material.name} — {color.style ? `${color.style} ` : ''}{color.name}</span>
+					<span class="stock" class:out={!materialAvailability.inStock}>{materialAvailability.inStock ? 'In Stock' : 'Not in Stock'}</span>
 				</div>
 				<span class="code-sm">
-					{material.specs}{#if material.datasheetUrl}
-						· <a class="datasheet" href={material.datasheetUrl} target="_blank" rel="noopener">Datasheet</a>{/if}
+					{material.specs}{#if material.datasheetUrls.length === 1}
+						{' '}· <a class="datasheet" href={material.datasheetUrls[0]} target="_blank" rel="noopener">Datasheet</a>
+					{:else if material.datasheetUrls.length > 1}
+						{' '}· Datasheets{#each material.datasheetUrls as url, i (url)}
+							{' '}<a class="datasheet" href={url} target="_blank" rel="noopener">{i + 1}</a>{/each}
+					{/if}
 				</span>
 			</div>
 			<span class="per-gram">{money(material.pricePerGram)}<small>/g</small></span>
 		</div>
-		{#if !material.inStock}{@render backorderNote()}{/if}
+		{#if !materialAvailability.inStock}{@render stockNote(materialAvailability.message)}{/if}
+		{#if interfaceAvailability && !interfaceAvailability.inStock}{@render stockNote(`${solubleInterface?.name} interface: ${interfaceAvailability.message}`)}{/if}
+		{#if jobReady}{@render stockNote(jobReady.message, 'event_available')}{/if}
 
 		<div class="field">
 			<span class="caps">Material Category<HelpButton key="materialCategory" /></span>
@@ -1991,7 +2028,7 @@
 			</span>
 		</div>
 
-		<div class="field-row">
+		<div class="field-row" class:three={!!baseMaterial.styleOption}>
 			<div class="field">
 				<span class="caps">Material Polymer<HelpButton key="materialPolymer" /></span>
 				<span class="select-wrap">
@@ -2001,12 +2038,23 @@
 					<span class="material-symbols-outlined chevron">expand_more</span>
 				</span>
 			</div>
+			{#if baseMaterial.styleOption}
+				<div class="field">
+					<span class="caps">{baseMaterial.styleOption.name}</span>
+					<span class="select-wrap">
+						<select aria-label={baseMaterial.styleOption.name} value={color.style} onchange={(e) => selectStyle(e.currentTarget.value)}>
+							{#each baseMaterial.styleOption.values as v (v)}<option value={v}>{v}</option>{/each}
+						</select>
+						<span class="material-symbols-outlined chevron">expand_more</span>
+					</span>
+				</div>
+			{/if}
 			<div class="field">
-				<span class="caps">Variant / Color<HelpButton key="color" /></span>
+				<span class="caps">{baseMaterial.styleOption ? 'Color' : 'Variant / Color'}<HelpButton key="color" /></span>
 				<span class="select-wrap">
 					<span class="dot-swatch" style:background={colorHex}></span>
 					<select class="with-swatch" aria-label="Color" value={color.id} onchange={(e) => (colorId = e.currentTarget.value)}>
-						{#each baseMaterial.colors as c (c.id)}<option value={c.id}>{c.name}{c.inStock ? '' : ' (Backorder)'}</option>{/each}
+						{#each styleColors as c (c.id)}<option value={c.id}>{c.name}{availability(c, partGrams).inStock ? '' : ' (Not in stock)'}</option>{/each}
 					</select>
 					<span class="material-symbols-outlined chevron">expand_more</span>
 				</span>
@@ -2019,6 +2067,13 @@
 	<p class="backorder-note" role="status">
 		<span class="material-symbols-outlined">local_shipping</span>
 		<span>We don't have this material on hand right now. If you place an order, we'll order it from the manufacturer, which may delay processing.</span>
+	</p>
+{/snippet}
+
+{#snippet stockNote(message: string, icon = 'local_shipping')}
+	<p class="backorder-note" role="status">
+		<span class="material-symbols-outlined">{icon}</span>
+		<span>{message}</span>
 	</p>
 {/snippet}
 
@@ -2042,7 +2097,7 @@
 				class="option"
 				class:selected={fdm.nozzle === n.size}
 				disabled={!allowed}
-				title={allowed ? undefined : `${material.name} can't be printed with a ${n.size.toFixed(1)} mm nozzle`}
+				title={allowed ? undefined : `${material.name} ${color.label} can't be printed with a ${n.size.toFixed(1)} mm nozzle`}
 				onclick={() => (fdm.nozzle = n.size)}
 			>
 				<span class="option-title">{n.size.toFixed(1)} mm</span>
@@ -2051,7 +2106,7 @@
 		{/each}
 	</div>
 	{#if allowedNozzles.length < nozzles.length}
-		<span class="help">{material.name} prints with {allowedNozzles.map((n) => n.toFixed(1)).join(' / ')} mm nozzles only.</span>
+		<span class="help">{material.name} {color.style ?? ''} prints with {allowedNozzles.map((n) => n.toFixed(1)).join(' / ')} mm nozzles only.</span>
 	{/if}
 {/snippet}
 
@@ -3857,6 +3912,11 @@
 	@media (min-width: 640px) {
 		.field-row {
 			grid-template-columns: repeat(2, 1fr);
+		}
+
+		/* Polymer on its own row, then style (Finish / Type…) beside colour. */
+		.field-row.three > :first-child {
+			grid-column: 1 / -1;
 		}
 
 		.cols-4 {

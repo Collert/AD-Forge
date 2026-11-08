@@ -28,6 +28,7 @@ import {
 	defaultProfile,
 	machiningProfile,
 	machiningRates,
+	nozzles,
 	processes,
 	processProfiles,
 	resinProfile,
@@ -35,6 +36,7 @@ import {
 	type Catalog,
 	type Process
 } from '$lib/catalog/config';
+import { allowedNozzles } from '$lib/catalog/availability';
 import { estimateMachining, type MachiningSettings, type PrintCost, type PrintSettings, type ResinSettings } from '$lib/pricing/estimate';
 import type { ModelInfo } from '$lib/viewer/analysis';
 import { analyzeMachiningAsync } from '$lib/viewer/machining';
@@ -133,8 +135,10 @@ async function createFdmQuote(process: Process, body: QuoteRequestBody, model: U
 	const soluble = catalog.supportInterfaces.find((i) => i.id === 'soluble');
 	const pva = soluble?.material;
 	const settings = parse(() => parsePrintSettings(body.settings, !!pva));
-	if (material.nozzles && !material.nozzles.includes(settings.nozzle)) {
-		throw new SlicerError(`${material.name} can't be printed with a ${settings.nozzle} mm nozzle. Pick one of: ${material.nozzles.join(', ')} mm.`, 400);
+	// Approved nozzles are per variant (e.g. TPU 85A takes 0.6/0.8 only, 95A HF 0.4 and up).
+	const allowed = allowedNozzles(color.nozzles, nozzles.map((n) => n.size));
+	if (!allowed.includes(settings.nozzle)) {
+		throw new SlicerError(`${material.name} ${color.label} can't be printed with a ${settings.nozzle} mm nozzle. Pick one of: ${allowed.join(', ')} mm.`, 400);
 	}
 	const useSoluble = settings.supportPlacement !== 'none' && settings.supportInterface === 'soluble';
 	const mesh = parse(() => parseStl(model));
@@ -165,6 +169,7 @@ async function createFdmQuote(process: Process, body: QuoteRequestBody, model: U
 			grams: partGrams + interfaceGrams,
 			// Orca doesn't report support material on its own; only a soluble interface is measured apart.
 			supportGrams: interfaceGrams,
+			interfaceGrams,
 			hours,
 			layers: stats.layers,
 			materialCost,
@@ -177,7 +182,7 @@ async function createFdmQuote(process: Process, body: QuoteRequestBody, model: U
 			quote,
 			name,
 			processId: process.id,
-			material: { id: material.id, name: material.name, color: color.name, colorHex: color.hex },
+			material: { id: material.id, name: material.name, color: color.label, colorHex: color.hex },
 			triangles: mesh.triangles.length / 3,
 			file,
 			settings,

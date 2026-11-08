@@ -72,6 +72,8 @@ export type PrintCost = {
 	stock?: StockSize & { cm3: number; removedCm3: number; setups: number };
 	grams: number;
 	supportGrams: number;
+	/** Part of `grams` printed in a separate soluble interface material (FDM only). */
+	interfaceGrams?: number;
 	hours: number;
 	layers: number;
 	materialCost: number;
@@ -132,6 +134,7 @@ export function estimatePrint(
 	return {
 		grams,
 		supportGrams,
+		interfaceGrams,
 		hours,
 		layers,
 		materialCost,

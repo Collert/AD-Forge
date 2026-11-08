@@ -57,12 +57,23 @@ export type ProcessProfile = {
 export type ColorOption = {
 	/** Shopify variant id. */
 	id: string;
+	/** The colour (the variant's Colour option, else its title). */
 	name: string;
+	/** The variant's full name, e.g. "Matte / Black"; same as `name` for single-option products. */
+	label: string;
+	/** Value of the product's other option (Finish, Style, Type, Hardness…) on two-option products. */
+	style?: string;
 	hex: string;
 	/** $ per unit of the product (gram of filament, ml of resin). */
 	price: number;
-	/** On hand; otherwise orderable on backorder. */
+	/** Any on hand; otherwise orderable on backorder. */
 	inStock: boolean;
+	/** Units on hand (1 unit = 1 g of filament); null when inventory isn't tracked. */
+	available: number | null;
+	/** Supplier ETA (YYYY-MM-DD) from the variant's `custom.supplier_eta`. */
+	supplierEta?: string;
+	/** Nozzle sizes (mm) the variant is approved for, from its `custom.approved_nozzles`; unset allows every size. */
+	nozzles?: number[];
 };
 
 /** An FDM filament (a Shopify product priced per gram). */
@@ -82,9 +93,14 @@ export type Material = {
 	/** Needs a heated enclosure, so open-frame printers can't run it. */
 	requiresEnclosure: boolean;
 	colors: ColorOption[];
+	/**
+	 * The product's non-colour option (e.g. PLA's "Finish": Basic / Matte), when it has one; each
+	 * colour's `style` is one of `values`, and the picker only lists colours of the chosen value.
+	 */
+	styleOption?: { name: string; values: string[] };
 	datasheetUrl?: string;
-	/** Nozzle sizes (mm) the filament is approved for, from `custom.approved_nozzles`; unset allows every size. */
-	nozzles?: number[];
+	/** Every datasheet of a merged product (`custom.technical_datasheets`), else just `datasheetUrl`. */
+	datasheetUrls: string[];
 	/**
 	 * OrcaSlicer filament preset name without its printer suffix (e.g. "Bambu PETG HF"), from the
 	 * product's `custom.orca_filament` metafield. Unset: matched from the product title.
@@ -114,7 +130,7 @@ export type SupportInterface = ChoiceOption & {
 	/** $ per gram of interface material; null = same as the part. */
 	pricePerGram: number | null;
 	/** A separate interface material: its density (g/cm³) and slicer preset, as on `Material`. */
-	material?: Pick<Material, 'density' | 'slicerPreset'> & { name: string; hex: string };
+	material?: Pick<Material, 'density' | 'slicerPreset'> & { name: string; hex: string; /** The variant printed, for stock checks. */ color: ColorOption };
 };
 /** A photopolymer resin for SLA. */
 export type Resin = {

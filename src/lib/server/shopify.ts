@@ -49,9 +49,18 @@ const PRODUCT_METAFIELDS = [
 	'stock_material',
 	'stock_shape',
 	'orca_filament',
-	'approved_nozzles'
+	'technical_datasheets'
 ];
-const VARIANT_METAFIELDS = ['color', 'secondary_color', 'thickness_mm', 'width_mm', 'length_mm', 'diameter_mm'];
+const VARIANT_METAFIELDS = [
+	'color',
+	'secondary_color',
+	'thickness_mm',
+	'width_mm',
+	'length_mm',
+	'diameter_mm',
+	'approved_nozzles',
+	'supplier_eta'
+];
 
 const identifiers = (keys: string[]) => `[${keys.map((k) => `{namespace: "custom", key: "${k}"}`).join(', ')}]`;
 
@@ -115,7 +124,12 @@ async function all<T>(query: string, key: string, variables: Record<string, unkn
 	return nodes;
 }
 
-/** Filament, resin and CNC stock products, plus every collection (to find the filament categories). */
+/**
+ * Filament, resin and CNC stock products, plus every collection (to find the filament categories).
+ * The Storefront API only serves products whose status is ACTIVE (and published to this app's
+ * channel); draft and archived products, such as the ones merged into multi-option products,
+ * never come back, so there's no status field to filter on here.
+ */
 export async function fetchStoreData() {
 	const query = [PRINT_MATERIAL_TYPE, CNC_STOCK_TYPE].map((t) => `product_type:"${t}"`).join(' OR ');
 	const [products, collections] = await Promise.all([
