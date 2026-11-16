@@ -240,7 +240,7 @@ export type FuzzySkinMode = ChoiceOption & { timeFactor: number };
 export type NumberRange = { min: number; max: number; step: number };
 
 export const processes: Process[] = [
-	{ id: 'fdm', kind: 'extrusion', badge: 'FDM', title: 'FDM 3D Printing', subtitle: 'Rapid Engineering Grade', icon: 'layers', bed: { x: 255, y: 255, z: 255 }, bedLabel: 'Bed', enclosed: true, slicer: { vendor: 'BBL', printer: 'Bambu Lab X1 Carbon', plate: 'Textured PEI Plate' } },
+	{ id: 'fdm', kind: 'extrusion', badge: 'FDM', title: 'FDM 3D Printing', subtitle: 'Rapid Engineering Grade', icon: 'layers', bed: { x: 330, y: 320, z: 325 }, bedLabel: 'Bed', enclosed: true, slicer: { vendor: 'BBL', printer: 'Bambu Lab X1 Carbon', plate: 'Textured PEI Plate' } },
 	{ id: 'large-fdm', kind: 'extrusion', badge: 'Large FDM', title: 'Large-Scale FDM', subtitle: 'Build vol up to 450mm', icon: 'view_in_ar', bed: { x: 450, y: 450, z: 450 }, bedLabel: 'Bed', enclosed: false },
 	{ id: 'sla', kind: 'resin', badge: 'SLA', title: 'SLA Resin', subtitle: 'Ultra-smooth 25µm', icon: 'opacity', bed: { x: 150, y: 87, z: 160 }, bedLabel: 'Vat', minFeature: 0.3 },
 	{ id: 'cnc', kind: 'machining', badge: 'CNC', title: 'CNC Machining', subtitle: 'Metals, plastic & wood', icon: 'precision_manufacturing', bed: { x: 200, y: 200, z: 100 }, bedLabel: 'Envelope', minFeature: 1, tierScale: 2 },
