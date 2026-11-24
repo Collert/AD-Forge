@@ -1,9 +1,6 @@
 /**
- * The configurator's catalog, built from the Shopify store and cached in
- * memory: requests within `FRESH_MS` of the last fetch are served straight
- * from the cache; after that the cached copy is still served instantly while
- * a fresh one loads in the background (stale-while-revalidate). If Shopify is
- * unreachable the last good catalog keeps being served.
+ * The configurator's catalog, built from the Shopify store data (cached and
+ * refreshed in the background by `getStoreData`).
  */
 import {
 	preferredDefaults,
@@ -20,39 +17,26 @@ import {
 	type StockPiece,
 	type SupportInterface
 } from '$lib/catalog/config';
+import type { TechnicalData } from '$lib/catalog/library';
 import { filamentTraits, hasStockTraits, resinTraits, stockMaterialTraits } from './material-traits';
 import {
 	CNC_STOCK_TYPE,
 	PRINT_MATERIAL_TYPE,
-	fetchStoreData,
+	fromStoreData,
 	productFields,
 	variantFields,
 	type ShopifyCollection,
 	type ShopifyProduct,
-	type ShopifyVariant
+	type ShopifyVariant,
+	type StoreData
 } from './shopify';
 
-/** How long a fetched catalog is served before it's refreshed in the background. */
-const FRESH_MS = 5 * 60_000;
-
 /** Preview colour for variants without a `custom.color` metafield. */
-const FALLBACK_HEX = '#D9DDE1';
+export const FALLBACK_HEX = '#D9DDE1';
 
-let cached: Catalog | null = null;
-let pending: Promise<Catalog> | null = null;
+export const getCatalog = fromStoreData(buildCatalog);
 
-export async function getCatalog(): Promise<Catalog> {
-	if (cached && Date.now() - cached.fetchedAt < FRESH_MS) return cached;
-	pending ??= buildCatalog()
-		.then((catalog) => (cached = catalog))
-		.finally(() => (pending = null));
-	if (!cached) return pending;
-	pending.catch((err) => console.error('Catalog refresh failed; serving the cached copy.', err));
-	return cached;
-}
-
-async function buildCatalog(): Promise<Catalog> {
-	const { products, collections } = await fetchStoreData();
+function buildCatalog({ products, collections, fetchedAt }: StoreData): Catalog {
 	const printMaterials = products.filter((p) => p.productType === PRINT_MATERIAL_TYPE && p.availableForSale);
 	const resinProducts = printMaterials.filter(isResin);
 	const filaments = printMaterials.filter((p) => !isResin(p));
@@ -76,12 +60,12 @@ async function buildCatalog(): Promise<Catalog> {
 		stockGroups: stockGroups.filter((g) => stockMaterials.some((m) => m.group === g.id)),
 		supportInterfaces,
 		defaults: resolveDefaults(materialCategories, resins, stockMaterials),
-		fetchedAt: Date.now()
+		fetchedAt
 	};
 }
 
 /** Resins are priced per millilitre; filaments per gram. */
-function isResin(product: ShopifyProduct) {
+export function isResin(product: ShopifyProduct) {
 	const uom = productFields(product).uom_abbreviation?.toLowerCase();
 	return uom ? uom === 'ml' : product.tags.includes('Resin');
 }
@@ -112,7 +96,8 @@ function toMaterial(product: ShopifyProduct): Material | null {
 	if (!colors.length) return null;
 	const fields = productFields(product);
 	const traits = filamentTraits(product.title);
-	const density = num(fields.density) ?? traits.density;
+	const tech = technicalData(product);
+	const density = num(fields.density) ?? tech.density ?? traits.density;
 	const requiresEnclosure = fields.requires_enclosure === 'true';
 	return {
 		id: product.handle,
@@ -121,18 +106,28 @@ function toMaterial(product: ShopifyProduct): Material | null {
 		density,
 		pricePerGram: minPrice(colors)!,
 		speedFactor: traits.speedFactor,
-		specs: filamentSpecs(product.description, density, requiresEnclosure),
+		specs: filamentSpecs(product.description, tech, density, requiresEnclosure),
 		inStock: colors.some((c) => c.inStock),
 		requiresEnclosure,
 		colors,
-		datasheetUrl: fields.technical_datasheet,
+		datasheetUrl: fields.technical_datasheet ?? tech.datasheets[0],
 		slicerPreset: fields.orca_filament?.trim() || undefined,
-		nozzles: approvedNozzles(fields.approved_nozzles)
+		nozzles: productNozzles(product)
 	};
 }
 
+/** Nozzle sizes (mm) any orderable colour is approved for; undefined when none says, so every size is allowed. */
+function productNozzles(product: ShopifyProduct): number[] | undefined {
+	const sizes = new Set<number>();
+	for (const v of product.variants.nodes) {
+		if (v.availableForSale) approvedNozzles(variantFields(v).approved_nozzles)?.forEach((n) => sizes.add(n));
+	}
+	if (!sizes.size) approvedNozzles(productFields(product).approved_nozzles)?.forEach((n) => sizes.add(n));
+	return sizes.size ? [...sizes].sort((a, b) => a - b) : undefined;
+}
+
 /** `custom.approved_nozzles` (a JSON list like ["0.4","0.6"]) as sizes; undefined when unset or unreadable. */
-function approvedNozzles(value: string | undefined): number[] | undefined {
+export function approvedNozzles(value: string | undefined): number[] | undefined {
 	try {
 		const sizes = (JSON.parse(value ?? '') as unknown[]).map(Number).filter((n) => Number.isFinite(n) && n > 0);
 		return sizes.length ? sizes : undefined;
@@ -141,10 +136,34 @@ function approvedNozzles(value: string | undefined): number[] | undefined {
 	}
 }
 
-/** "Tensile: 39 MPa • Heat Deflect: 55°C • 1.24 g/cm³", from what the description states. */
-function filamentSpecs(description: string, density: number, requiresEnclosure: boolean) {
-	const tensile = description.match(/tensile[^.]{0,40}?(\d+(?:\.\d+)?)\s*(?:±\s*\d+(?:\.\d+)?\s*)?MPa/i)?.[1];
-	const heat = description.match(/(?:heat[- ]deflection|HDT)[^.]{0,40}?(\d{2,3})\s*°\s*C/i)?.[1];
+/** The product's `custom.technical_data` metaobject, plus any `custom.technical_datasheets` links. */
+export function technicalData(product: ShopifyProduct): TechnicalData {
+	const f = Object.fromEntries((product.technicalData?.reference?.fields ?? []).map((x) => [x.key, x.value ?? undefined]));
+	const sheets = [...jsonList(f.datasheets), ...jsonList(productFields(product).technical_datasheets)];
+	return {
+		heatDeflection: num(f.heat_deflection_temp_c),
+		tensileStrength: num(f.tensile_strength_mpa),
+		elongation: num(f.elongation_at_break_pct),
+		bendingModulus: num(f.bending_modulus_mpa),
+		density: num(f.density_g_cm3),
+		datasheets: [...new Set(sheets)]
+	};
+}
+
+/** A JSON list metafield (`list.*`) as strings; empty when unset or unreadable. */
+export function jsonList(value: string | undefined): string[] {
+	try {
+		const list = JSON.parse(value ?? '[]') as unknown;
+		return Array.isArray(list) ? list.map(String).filter((s) => s.trim()) : [];
+	} catch {
+		return [];
+	}
+}
+
+/** "Tensile: 39 MPa • Heat Deflect: 55°C • 1.24 g/cm³", from the technical data, else what the description states. */
+function filamentSpecs(description: string, tech: TechnicalData, density: number, requiresEnclosure: boolean) {
+	const tensile = tech.tensileStrength ?? description.match(/tensile[^.]{0,40}?(\d+(?:\.\d+)?)\s*(?:±\s*\d+(?:\.\d+)?\s*)?MPa/i)?.[1];
+	const heat = tech.heatDeflection ?? description.match(/(?:heat[- ]deflection|HDT)[^.]{0,40}?(\d{2,3})\s*°\s*C/i)?.[1];
 	return [
 		tensile && `Tensile: ${tensile} MPa`,
 		heat && `Heat Deflect: ${heat}°C`,
@@ -270,7 +289,7 @@ function medianPricePerCm3(pieces: StockPiece[], bars: StockBar[]) {
 // ---------- Shared ----------
 
 /** Orderable colour variants of a product. */
-function swatches(product: ShopifyProduct): ColorOption[] {
+export function swatches(product: ShopifyProduct): ColorOption[] {
 	return product.variants.nodes
 		.filter((v) => v.availableForSale)
 		.map((v) => ({
@@ -283,7 +302,7 @@ function swatches(product: ShopifyProduct): ColorOption[] {
 }
 
 /** On hand (untracked inventory counts as on hand); orderable variants without stock are backorders. */
-function isInStock(variant: ShopifyVariant) {
+export function isInStock(variant: ShopifyVariant) {
 	return variant.quantityAvailable === null || variant.quantityAvailable > 0;
 }
 
@@ -303,7 +322,7 @@ function resolveDefaults(categories: MaterialCategory[], resins: Resin[], stock:
 	};
 }
 
-function num(value: string | undefined) {
+export function num(value: string | undefined) {
 	const n = Number(value);
 	return value && Number.isFinite(n) && n > 0 ? n : undefined;
 }

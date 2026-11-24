@@ -99,10 +99,16 @@
 	let orientationFit = $state<OrientationFit>(null);
 	let processId = $derived(data.processId);
 	let mode = $state<'simple' | 'advanced'>('simple');
-	let categoryId = $state(untrack(() => data.catalog.defaults.categoryId));
-	let materialId = $state(untrack(() => data.catalog.defaults.materialId));
+	/** `?material=<handle>&color=<variant id>` (from the Materials Library) preselects a filament. */
+	const linked = untrack(() => {
+		const handle = page.url.searchParams.get('material');
+		const category = handle ? data.catalog.materialCategories.find((c) => c.materials.some((m) => m.id === handle)) : undefined;
+		return category && { categoryId: category.id, materialId: handle!, colorId: page.url.searchParams.get('color') ?? '' };
+	});
+	let categoryId = $state(untrack(() => linked?.categoryId ?? data.catalog.defaults.categoryId));
+	let materialId = $state(untrack(() => linked?.materialId ?? data.catalog.defaults.materialId));
 	/** Shopify variant id of the color; empty picks the first one in stock. */
-	let colorId = $state('');
+	let colorId = $state(linked?.colorId ?? '');
 	let qualityId = $state(defaults.qualityId);
 	let partName = $state('');
 

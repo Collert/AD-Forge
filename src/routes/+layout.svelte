@@ -32,7 +32,7 @@
 				<a href="/make/fdm">Workbench</a>
 				<a href="/library" class:current={page.url.pathname.startsWith('/library')}>My Designs</a>
 				<a href="/#services">Services</a>
-				<a href="https://adbits.ca/collections/custom-prints">Materials Library</a>
+				<a href="/materials" class:current={page.url.pathname.startsWith('/materials')}>Materials Library</a>
 			</nav>
 		</div>
 		<div class="header-right">
