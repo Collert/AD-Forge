@@ -27,3 +27,4 @@ vite.config.ts.timestamp-*
 
 *.log
 *.code-workspace
+/.claude/launch.json
