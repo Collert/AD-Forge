@@ -24,7 +24,8 @@
 	import type { ThicknessProfile } from '$lib/viewer/thickness';
 	import type { MachiningProfile } from '$lib/viewer/machining';
 	import type { AnalysisKind } from '$lib/viewer/analysis.worker';
-	import type { ViewerScene, ViewPreset } from '$lib/viewer/scene';
+	import type { MeasureResult, ViewerScene, ViewPreset } from '$lib/viewer/scene';
+	import type { MeasureMode } from '$lib/viewer/measure';
 	import {
 		clampScale,
 		identityTransform,
@@ -70,6 +71,8 @@
 		autoRotate?: boolean;
 		showOverhangs?: boolean;
 		showMeasure?: boolean;
+		/** Offer the click-to-measure tool (distance between points / vertices, circle diameter). */
+		measureTool?: boolean;
 		/** Rotation + scale baked into the part. Resets when a new model loads. */
 		transform?: ModelTransform;
 		/** Latest analysis of the displayed (transformed) part (read-only). */
@@ -102,6 +105,7 @@
 		autoRotate = $bindable(false),
 		showOverhangs = $bindable(false),
 		showMeasure = $bindable(false),
+		measureTool = true,
 		transform = $bindable(identityTransform()),
 		info = $bindable(null),
 		orientationFit = $bindable(null),
@@ -140,7 +144,14 @@
 	let dragging = $state(false);
 	let activeView = $state<ViewPreset>('iso');
 	let webglFailed = $state(false);
-	let panel = $state<'rotate' | 'scale' | null>(null);
+	let panel = $state<'rotate' | 'scale' | 'measure' | null>(null);
+	let measureMode = $state<MeasureMode>('point');
+	let measureResult = $state.raw<MeasureResult | null>(null);
+	const measureModes: { id: MeasureMode; label: string; hint: string }[] = [
+		{ id: 'point', label: 'Points', hint: 'Click two points anywhere on the part.' },
+		{ id: 'vertex', label: 'Vertices', hint: 'Click near two corners; each click snaps to the closest mesh vertex.' },
+		{ id: 'circle', label: 'Circle', hint: 'Click on the edge of a hole, boss or rim to measure its diameter.' }
+	];
 	let scaleLocked = $state(true);
 	let fitting = $state(false);
 	let fitResult = $state.raw<{ key: string; status: NonNullable<OrientationFit> } | null>(null);
@@ -409,6 +420,14 @@
 		});
 	});
 	$effect(() => viewer?.setMeasure(showMeasure));
+	// The pick tool is live while its panel is open.
+	$effect(() => {
+		const active = measureTool && hud && panel === 'measure' && !!analysis;
+		viewer?.setMeasureTool(active ? measureMode : null, (r) => (measureResult = r));
+	});
+	$effect(() => {
+		if (!measureTool && panel === 'measure') untrack(() => (panel = null));
+	});
 	$effect(() => viewer?.setAutoRotate(autoRotate));
 	$effect(() => {
 		if (!layers) untrack(() => (cutLayer = null));
@@ -494,8 +513,15 @@
 		transform = { ...transform, scale: { x: 1, y: 1, z: 1 } };
 	}
 
-	function togglePanel(name: 'rotate' | 'scale') {
+	function togglePanel(name: 'rotate' | 'scale' | 'measure') {
 		panel = panel === name ? null : name;
+	}
+
+	function onKeydown(e: KeyboardEvent) {
+		if (panel !== 'measure' || e.key !== 'Escape') return;
+		const t = e.target as HTMLElement | null;
+		if (t?.closest('input, textarea, select, [contenteditable]')) return;
+		viewer?.clearMeasureTool();
 	}
 
 	// ---------- Misc ----------
@@ -575,9 +601,11 @@
 	let scaled = $derived(axes.some((a) => transform.scale[a] !== 1));
 
 	const mm = (v: number) => v.toFixed(1);
+	const mm2 = (v: number) => v.toFixed(2);
 	const num = (e: Event) => Number((e.currentTarget as HTMLInputElement).value);
 </script>
 
+<svelte:window onkeydown={onKeydown} />
 <div
 	class="viewer"
 	data-tour="viewer"
@@ -654,6 +682,18 @@
 					>
 						<span class="material-symbols-outlined">straighten</span>
 					</button>
+					{#if measureTool}
+						<button
+							class="tool"
+							class:on={panel === 'measure'}
+							title="Measure distance or diameter"
+							aria-pressed={panel === 'measure'}
+							disabled={!analysis}
+							onclick={() => togglePanel('measure')}
+						>
+							<span class="material-symbols-outlined">architecture</span>
+						</button>
+					{/if}
 					<button
 						class="tool"
 						class:on={showOverhangs}
@@ -679,10 +719,50 @@
 				</div>
 			</div>
 
-			{#if editable && panel && analysis && unscaledSize}
+			{#if panel && analysis && unscaledSize && (panel === 'measure' ? measureTool : editable)}
 				<div class="panel-row">
-					<div class="panel" role="dialog" aria-label={panel === 'rotate' ? 'Rotate model' : 'Scale model'}>
-						{#if panel === 'rotate'}
+					<div
+						class="panel"
+						role="dialog"
+						aria-label={panel === 'rotate' ? 'Rotate model' : panel === 'scale' ? 'Scale model' : 'Measure'}
+					>
+						{#if panel === 'measure'}
+							<div class="panel-head">
+								<span class="panel-title"><span class="material-symbols-outlined">architecture</span>Measure</span>
+								<button class="panel-icon" title="Clear measurement (Esc)" onclick={() => viewer?.clearMeasureTool()}>
+									<span class="material-symbols-outlined">ink_eraser</span>
+								</button>
+							</div>
+							<div class="segmented measure-modes" role="group" aria-label="What to pick">
+								{#each measureModes as m (m.id)}
+									<button class:active={measureMode === m.id} onclick={() => (measureMode = m.id)}>{m.label}</button>
+								{/each}
+							</div>
+							{#if measureResult?.kind === 'distance'}
+								<div class="measure-value">
+									<span class="measure-big">{mm2(measureResult.distance)} mm</span>
+									<span class="measure-sub">{measureResult.mode === 'vertex' ? 'Vertex to vertex' : 'Point to point'}</span>
+								</div>
+								<div class="measure-deltas">
+									{#each axes as axis (axis)}
+										<span><span class="axis-label {axis}">Δ{axis}</span>{mm2(measureResult.delta[axis])}</span>
+									{/each}
+								</div>
+								<p class="fit-msg">Click again to start a new measurement.</p>
+							{:else if measureResult?.kind === 'circle'}
+								<div class="measure-value">
+									<span class="measure-big">Ø {mm2(measureResult.diameter)} mm</span>
+									<span class="measure-sub">Radius {mm2(measureResult.radius)} mm{measureResult.closed ? '' : ' · fitted to an arc'}</span>
+								</div>
+								<p class="fit-msg">Click another round edge to measure it.</p>
+							{:else if measureResult?.kind === 'miss'}
+								<p class="fit-msg bad"><span class="material-symbols-outlined">error</span>{measureResult.message}</p>
+							{:else if measureResult?.kind === 'empty' && measureResult.picks === 1}
+								<p class="fit-msg">First point set. Click the second one.</p>
+							{:else}
+								<p class="fit-msg">{measureModes.find((m) => m.id === measureMode)?.hint} Drag to orbit as usual.</p>
+							{/if}
+						{:else if panel === 'rotate'}
 							<div class="panel-head">
 								<span class="panel-title"><span class="material-symbols-outlined">3d_rotation</span>Rotate</span>
 								<button class="panel-icon" title="Reset rotation" onclick={resetRotation}>
@@ -915,6 +995,24 @@
 
 	.stage :global(.mv-canvas:active) {
 		cursor: grabbing;
+	}
+
+	.stage :global(.mv-canvas--pick),
+	.stage :global(.mv-canvas--pick:active) {
+		cursor: crosshair;
+	}
+
+	.stage :global(.mv-pin) {
+		width: 9px;
+		height: 9px;
+		border-radius: 50%;
+		background: var(--primary);
+		border: 2px solid var(--on-primary);
+		box-shadow: var(--shadow-sm);
+	}
+
+	.stage :global(.mv-pin--ghost) {
+		opacity: 0.55;
 	}
 
 	.stage :global(.mv-labels) {
@@ -1603,5 +1701,51 @@
 
 	.fit-msg.bad .material-symbols-outlined {
 		color: var(--error);
+	}
+
+	/* ---------- Measure panel ---------- */
+	.measure-modes button {
+		flex: 1;
+	}
+
+	.measure-value {
+		display: flex;
+		flex-direction: column;
+		gap: 1px;
+		padding: 0.25rem 0;
+	}
+
+	.measure-big {
+		font-family: var(--font-mono);
+		font-size: 18px;
+		font-weight: 700;
+		color: var(--primary);
+	}
+
+	.measure-sub {
+		font-size: 11px;
+		color: var(--on-surface-variant);
+	}
+
+	.measure-deltas {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 0.25rem;
+		font-family: var(--font-mono);
+		font-size: 11px;
+		color: var(--on-surface);
+	}
+
+	.measure-deltas > span {
+		display: flex;
+		align-items: center;
+		gap: 2px;
+		padding: 0.125rem 0.25rem;
+		border-radius: var(--radius-md);
+		background: var(--surface-container);
+	}
+
+	.measure-deltas .axis-label {
+		width: auto;
 	}
 </style>

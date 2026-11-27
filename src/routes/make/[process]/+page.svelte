@@ -1352,6 +1352,7 @@
 			bed={machineBed}
 			{bedLabel}
 			machining={isCnc}
+			measureTool={isResin || isCnc || mode === 'advanced'}
 			layers={!isCnc}
 			{layerHeight}
 			{overhangAngle}

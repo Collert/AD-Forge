@@ -12,7 +12,9 @@ import {
 	Float32BufferAttribute,
 	Group,
 	HemisphereLight,
+	Line,
 	LineBasicMaterial,
+	LineLoop,
 	LineDashedMaterial,
 	LineSegments,
 	Mesh,
@@ -24,9 +26,11 @@ import {
 	Plane,
 	PlaneGeometry,
 	PMREMGenerator,
+	Raycaster,
 	Scene,
 	Sphere,
 	SRGBColorSpace,
+	Vector2,
 	Vector3,
 	WebGLRenderer
 } from 'three';
@@ -36,8 +40,16 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { toCreasedNormals } from 'three/addons/utils/BufferGeometryUtils.js';
 import type { BedSize } from './analysis';
 import { overhangMask } from './analysis';
+import { MeasurePicker, type CircleFit, type MeasureMode } from './measure';
 
 export type ViewPreset = 'iso' | 'top' | 'front' | 'side' | 'bottom';
+
+/** What the measure tool reports after each click. Lengths in mm; deltas along printer X / Y / Z. */
+export type MeasureResult =
+	| { kind: 'empty'; mode: MeasureMode; picks: number }
+	| { kind: 'miss'; mode: MeasureMode; message: string }
+	| { kind: 'distance'; mode: MeasureMode; distance: number; delta: { x: number; y: number; z: number } }
+	| { kind: 'circle'; mode: MeasureMode; diameter: number; radius: number; closed: boolean };
 
 export type ViewerPalette = {
 	accent: string;
@@ -70,9 +82,18 @@ function label(text: string, className = 'mv-label') {
 	return new CSS2DObject(el);
 }
 
+/** Screen-sized dot marking a picked (or hovered) point. */
+function pin(at: Vector3, ghost = false) {
+	const el = document.createElement('div');
+	el.className = ghost ? 'mv-pin mv-pin--ghost' : 'mv-pin';
+	const obj = new CSS2DObject(el);
+	obj.position.copy(at);
+	return obj;
+}
+
 function disposeTree(root: Group) {
 	root.traverse((o) => {
-		if (o instanceof Mesh || o instanceof LineSegments) {
+		if (o instanceof Mesh || o instanceof Line) {
 			o.geometry.dispose();
 			const mats = Array.isArray(o.material) ? o.material : [o.material];
 			for (const m of mats) {
@@ -105,6 +126,16 @@ export class ViewerScene {
 	private underBed = false;
 	private measureGroup = new Group();
 	private cutGroup = new Group();
+	/** Picks and results of the point / vertex / circle measure tool. */
+	private toolGroup = new Group();
+	/** Live preview under the cursor while the tool is on. */
+	private hoverGroup = new Group();
+	private picker: MeasurePicker | null = null;
+	private tool: { mode: MeasureMode; onResult: (result: MeasureResult) => void } | null = null;
+	private picks: Vector3[] = [];
+	private pointerDown: { x: number; y: number } | null = null;
+	private hoverFrame = 0;
+	private raycaster = new Raycaster();
 
 	private material: MeshPhysicalMaterial;
 	private capMaterial: MeshBasicMaterial;
@@ -180,7 +211,7 @@ export class ViewerScene {
 			clippingPlanes: [this.clipPlane]
 		});
 
-		this.scene.add(this.bedGroup, this.measureGroup, this.cutGroup);
+		this.scene.add(this.bedGroup, this.measureGroup, this.cutGroup, this.toolGroup, this.hoverGroup);
 		this.measureGroup.visible = false;
 		this.cutGroup.visible = false;
 
@@ -191,6 +222,12 @@ export class ViewerScene {
 		this.controls.minDistance = 15;
 		this.controls.autoRotateSpeed = 1.2;
 		this.controls.addEventListener('start', () => (this.tween = null));
+
+		const canvas = this.renderer.domElement;
+		canvas.addEventListener('pointerdown', this.onPointerDown);
+		canvas.addEventListener('pointerup', this.onPointerUp);
+		canvas.addEventListener('pointermove', this.onPointerMove);
+		canvas.addEventListener('pointerleave', this.onPointerLeave);
 
 		this.resizeObserver = new ResizeObserver(() => this.resize());
 		this.resizeObserver.observe(container);
@@ -347,6 +384,9 @@ export class ViewerScene {
 	 * pass false when the same part was just edited.
 	 */
 	setGeometry(source: BufferGeometry | null, refit = true): BufferGeometry | null {
+		// Picks refer to the old mesh; an edit (rotate / scale) invalidates them.
+		this.picker = null;
+		this.clearMeasureTool();
 		if (this.model) {
 			this.model.geometry.dispose();
 			this.scene.remove(this.model, this.cap!);
@@ -453,6 +493,159 @@ export class ViewerScene {
 		this.setMeasure(this.measureGroup.visible);
 	}
 
+	// ---------- Measure tool (points, vertices, circles) ----------
+
+	/** Turn the click-to-measure tool on (`mode`) or off (`null`). Changing mode clears the picks. */
+	setMeasureTool(mode: MeasureMode | null, onResult: (result: MeasureResult) => void) {
+		const changed = this.tool?.mode !== mode;
+		this.tool = mode ? { mode, onResult } : null;
+		this.renderer.domElement.classList.toggle('mv-canvas--pick', !!mode);
+		if (changed) this.clearMeasureTool();
+	}
+
+	/** Forget the picks and remove the drawn measurement. */
+	clearMeasureTool() {
+		this.picks = [];
+		disposeTree(this.toolGroup);
+		disposeTree(this.hoverGroup);
+		this.tool?.onResult({ kind: 'empty', mode: this.tool.mode, picks: 0 });
+	}
+
+	private onPointerDown = (e: PointerEvent) => {
+		this.pointerDown = e.button === 0 ? { x: e.clientX, y: e.clientY } : null;
+	};
+
+	private onPointerUp = (e: PointerEvent) => {
+		const down = this.pointerDown;
+		this.pointerDown = null;
+		// A drag orbits the camera; only a click (barely moved) picks.
+		if (!this.tool || !down || Math.hypot(e.clientX - down.x, e.clientY - down.y) > 5) return;
+		this.pick(e);
+	};
+
+	private onPointerMove = (e: PointerEvent) => {
+		if (!this.tool || e.buttons || e.pointerType === 'touch') return;
+		cancelAnimationFrame(this.hoverFrame);
+		this.hoverFrame = requestAnimationFrame(() => this.hover(e));
+	};
+
+	private onPointerLeave = () => {
+		cancelAnimationFrame(this.hoverFrame);
+		disposeTree(this.hoverGroup);
+	};
+
+	/** Where a pointer event lands on the part, snapped for the current mode. */
+	private target(e: PointerEvent): { point: Vector3; circle?: CircleFit } | 'no-circle' | null {
+		if (!this.model || !this.tool) return null;
+		const rect = this.renderer.domElement.getBoundingClientRect();
+		const ndc = new Vector2(
+			((e.clientX - rect.left) / rect.width) * 2 - 1,
+			-((e.clientY - rect.top) / rect.height) * 2 + 1
+		);
+		this.raycaster.setFromCamera(ndc, this.camera);
+		this.picker ??= new MeasurePicker(this.model.geometry);
+		const hit = this.picker.raycast(this.raycaster.ray, this.clipPlane.constant);
+		if (!hit) return null;
+		if (this.tool.mode === 'point') return { point: hit.point };
+		if (this.tool.mode === 'vertex') return { point: this.picker.snapToVertex(hit.point, hit.face) };
+
+		// Circle: look for a rim within ~12 px of the cursor.
+		const fov = (this.camera.fov * Math.PI) / 180;
+		const mmPerPx = (2 * hit.point.distanceTo(this.camera.position) * Math.tan(fov / 2)) / rect.height;
+		const circle = this.picker.findCircle(hit.point, mmPerPx * 12);
+		return circle ? { point: circle.center, circle } : 'no-circle';
+	}
+
+	private pick(e: PointerEvent) {
+		const tool = this.tool!;
+		const t = this.target(e);
+		disposeTree(this.hoverGroup);
+		if (t === 'no-circle') {
+			tool.onResult({ kind: 'miss', mode: tool.mode, message: 'No round edge there. Click on or right beside a hole or rim.' });
+			return;
+		}
+		if (!t) return;
+
+		if (t.circle) {
+			this.picks = [];
+			disposeTree(this.toolGroup);
+			this.drawCircle(this.toolGroup, t.circle, 1);
+			tool.onResult({
+				kind: 'circle',
+				mode: tool.mode,
+				diameter: t.circle.radius * 2,
+				radius: t.circle.radius,
+				closed: t.circle.closed
+			});
+			return;
+		}
+
+		// A third click starts a new measurement.
+		if (this.picks.length >= 2) {
+			this.picks = [];
+			disposeTree(this.toolGroup);
+		}
+		this.picks.push(t.point);
+		this.toolGroup.add(pin(t.point));
+		if (this.picks.length === 1) {
+			tool.onResult({ kind: 'empty', mode: tool.mode, picks: 1 });
+			return;
+		}
+		const [a, b] = this.picks;
+		this.drawSegment(this.toolGroup, a, b, 1);
+		tool.onResult({
+			kind: 'distance',
+			mode: tool.mode,
+			distance: a.distanceTo(b),
+			// The scene is Y-up: printer X = x, Y = −z, Z = y.
+			delta: { x: Math.abs(b.x - a.x), y: Math.abs(b.z - a.z), z: Math.abs(b.y - a.y) }
+		});
+	}
+
+	private hover(e: PointerEvent) {
+		disposeTree(this.hoverGroup);
+		const t = this.target(e);
+		if (!t || t === 'no-circle') return;
+		if (t.circle) {
+			this.drawCircle(this.hoverGroup, t.circle, 0.45);
+			return;
+		}
+		this.hoverGroup.add(pin(t.point, true));
+		if (this.picks.length === 1) this.drawSegment(this.hoverGroup, this.picks[0], t.point, 0.5);
+	}
+
+	/** Lines drawn over the part so a measurement stays visible from any angle. */
+	private overlayMaterial(opacity: number) {
+		return new LineBasicMaterial({ color: this.palette.accent, transparent: true, opacity, depthTest: false });
+	}
+
+	private drawSegment(group: Group, a: Vector3, b: Vector3, opacity: number) {
+		const line = new Line(new BufferGeometry().setFromPoints([a, b]), this.overlayMaterial(opacity));
+		line.renderOrder = 10;
+		const tag = label(`${a.distanceTo(b).toFixed(2)} mm`, 'mv-label mv-label--measure');
+		tag.position.lerpVectors(a, b, 0.5);
+		group.add(line, tag);
+	}
+
+	private drawCircle(group: Group, c: CircleFit, opacity: number) {
+		const ex = new Vector3(1, 0, 0);
+		if (Math.abs(ex.dot(c.normal)) > 0.9) ex.set(0, 1, 0);
+		ex.addScaledVector(c.normal, -ex.dot(c.normal)).normalize();
+		const ey = new Vector3().crossVectors(c.normal, ex);
+		const ring: Vector3[] = [];
+		for (let i = 0; i < 96; i++) {
+			const t = (i / 96) * Math.PI * 2;
+			ring.push(c.center.clone().addScaledVector(ex, Math.cos(t) * c.radius).addScaledVector(ey, Math.sin(t) * c.radius));
+		}
+		const loop = new LineLoop(new BufferGeometry().setFromPoints(ring), this.overlayMaterial(opacity));
+		loop.renderOrder = 10;
+		const across = new Line(new BufferGeometry().setFromPoints([ring[0], ring[48]]), this.overlayMaterial(opacity * 0.6));
+		across.renderOrder = 10;
+		const tag = label(`Ø ${(c.radius * 2).toFixed(2)} mm`, 'mv-label mv-label--measure');
+		tag.position.copy(c.center);
+		group.add(loop, across, tag);
+	}
+
 	// ---------- Layer cut ----------
 
 	/** Clip the part at a height (mm). `null` shows the whole part. */
@@ -549,7 +742,7 @@ export class ViewerScene {
 		camera.lookAt(sphere.center);
 		camera.updateProjectionMatrix();
 
-		const hidden = [this.bedGroup, this.measureGroup, this.cutGroup, this.cap].filter(
+		const hidden = [this.bedGroup, this.measureGroup, this.cutGroup, this.toolGroup, this.hoverGroup, this.cap].filter(
 			(o): o is NonNullable<typeof o> => !!o && o.visible
 		);
 		const clip = this.clipPlane.constant;
@@ -621,12 +814,21 @@ export class ViewerScene {
 
 	dispose() {
 		this.stop();
+		cancelAnimationFrame(this.hoverFrame);
+		this.tool = null;
+		const canvas = this.renderer.domElement;
+		canvas.removeEventListener('pointerdown', this.onPointerDown);
+		canvas.removeEventListener('pointerup', this.onPointerUp);
+		canvas.removeEventListener('pointermove', this.onPointerMove);
+		canvas.removeEventListener('pointerleave', this.onPointerLeave);
 		this.resizeObserver.disconnect();
 		this.visibilityObserver.disconnect();
 		this.setGeometry(null);
 		disposeTree(this.bedGroup);
 		disposeTree(this.measureGroup);
 		disposeTree(this.cutGroup);
+		disposeTree(this.toolGroup);
+		disposeTree(this.hoverGroup);
 		this.material.dispose();
 		this.capMaterial.dispose();
 		this.scene.environment?.dispose();
