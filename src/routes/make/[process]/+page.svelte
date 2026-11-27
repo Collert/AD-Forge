@@ -5,6 +5,8 @@
 	import ModelViewer from '$lib/components/ModelViewer.svelte';
 	import HelpButton from '$lib/components/HelpButton.svelte';
 	import HelpDialog from '$lib/components/HelpDialog.svelte';
+	import Tour from '$lib/components/Tour.svelte';
+	import { isTourDone, tourFor } from '$lib/tour/tours';
 	import type { HelpKey } from '$lib/catalog/help';
 	import type { ModelInfo } from '$lib/viewer/analysis';
 	import { formatOf, isStoredModel, nameOf, type ModelSource, type StoredModel } from '$lib/viewer/load-model';
@@ -378,6 +380,31 @@
 
 	function scrollToQuote() {
 		quoteCard?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+	}
+
+	// ---------- Guided tour ----------
+
+	/** Walkthrough for this method (FDM only so far), offered once per browser. */
+	let tour = $derived(tourFor(process));
+	let tourOpen = $state(false);
+
+	// First visit to a method with a tour: start it once the page has settled.
+	// Not on the way back from signing in, which is mid-order.
+	$effect(() => {
+		const t = tour;
+		if (!t || untrack(() => autoConfirm) || isTourDone(t.id)) return;
+		const timer = setTimeout(() => (tourOpen = true), 700);
+		return () => clearTimeout(timer);
+	});
+
+	// A method without a tour ends one that's running.
+	$effect(() => {
+		if (!tour) tourOpen = false;
+	});
+
+	/** The tour walks through the Simple tab. */
+	function startTour() {
+		mode = 'simple';
 	}
 
 	/** The phone-sized method dropdown at the top of the page. */
@@ -1265,9 +1292,10 @@
 </svelte:head>
 
 <HelpDialog />
+<Tour {tour} bind:open={tourOpen} onstart={startTour} />
 
 <!-- Process selector ribbon: tiles on wider screens, a dropdown on phones -->
-<section class="ribbon">
+<section class="ribbon" data-tour="method">
 	<label class="process-select">
 		<span class="visually-hidden">Manufacturing method</span>
 		<span class="material-symbols-outlined process-icon">{process.icon}</span>
@@ -1374,7 +1402,7 @@
 			</div>
 		</div>
 
-		<div class="card health">
+		<div class="card health" data-tour="health">
 			<div class="health-head">
 				<div class="health-title">
 					<span class="material-symbols-outlined">health_and_safety</span>
@@ -1422,7 +1450,7 @@
 	<!-- RIGHT: parameters + quote -->
 	<div class="col-right">
 		<div class="card config">
-			<label class="name-field">
+			<label class="name-field" data-tour="part-name">
 				<span class="caps">Part Name</span>
 				<span class="name-input">
 					<span class="material-symbols-outlined">edit</span>
@@ -1443,9 +1471,14 @@
 					<button class="method-link" onclick={openMethodPicker}>
 						<span class="material-symbols-outlined">swap_horiz</span>{process.badge} · Change manufacturing method
 					</button>
+					{#if tour}
+						<button class="method-link" onclick={() => (tourOpen = true)}>
+							<span class="material-symbols-outlined">school</span>Take the tour
+						</button>
+					{/if}
 				</div>
 				{#if !isResin && !isCnc}
-					<div class="mode-switch" role="group" aria-label="Configuration mode">
+					<div class="mode-switch" data-tour="mode" role="group" aria-label="Configuration mode">
 						<button class:active={mode === 'simple'} onclick={() => (mode = 'simple')}>Simple</button>
 						<button class:active={mode === 'advanced'} onclick={() => (mode = 'advanced')}>Advanced</button>
 					</div>
@@ -1625,7 +1658,7 @@
 					</p>
 				</div>
 			{:else if mode === 'simple'}
-				<div class="knob">
+				<div class="knob" data-tour="material">
 					<div class="knob-head">
 						<span class="knob-title"><span class="step">1</span>Material &amp; Color<HelpButton key="fdmMaterial" /></span>
 						<a class="caps primary-text link" href="/#services">Browse 40+ Tech Polymers</a>
@@ -1633,7 +1666,7 @@
 					{@render materialPicker()}
 				</div>
 
-				<div class="knob">
+				<div class="knob" data-tour="quality">
 					<div class="knob-head">
 						<span class="knob-title"><span class="step">2</span>Surface Quality (Layer Height)<HelpButton key="layerHeight" /></span>
 						<span class="hint">Standard Recommended</span>
@@ -1641,7 +1674,7 @@
 					{@render qualityPicker()}
 				</div>
 
-				<div class="knob">
+				<div class="knob" data-tour="infill">
 					<div class="knob-head">
 						<span class="knob-title"><span class="step">3</span>Internal Infill Density<HelpButton key="infillDensity" /></span>
 						<span class="metric-accent">{fdm.infill}%</span>
@@ -1649,7 +1682,7 @@
 					<div class="infill-box">{@render infillDensity()}</div>
 				</div>
 
-				<div class="knob">
+				<div class="knob" data-tour="nozzle">
 					<div class="knob-head">
 						<span class="knob-title"><span class="step">4</span>Level of Detail (Nozzle Size)<HelpButton key="nozzle" /></span>
 						<span class="hint">Standard 0.4mm</span>
@@ -1815,7 +1848,7 @@
 			{/if}
 
 			<!-- Quote -->
-			<div class="quote" class:accurate={quoteCurrent} bind:this={quoteCard}>
+			<div class="quote" data-tour="quote" class:accurate={quoteCurrent} bind:this={quoteCard}>
 				<div class="quote-head">
 					<span class="caps">Price</span>
 					{#if quoteCurrent}
@@ -1890,12 +1923,12 @@
 				{/if}
 
 				{#if quoteCurrent && !canSave && !finalizedCurrent && orderable}
-					<a class="btn-cta primary" href={signInHref} onclick={signInToConfirm}>
+					<a class="btn-cta primary" data-tour="quote-cta" href={signInHref} onclick={signInToConfirm}>
 						<span class="material-symbols-outlined">login</span>Sign In &amp; Upload
 					</a>
 					<p class="cta-hint">Sign in or create a free account to order. We'll bring you straight back and finish the upload; your part and quote are kept.</p>
 				{:else if quoteCurrent}
-					<button class="btn-cta primary" disabled={finalizing || !orderable} onclick={confirmUpload}>
+					<button class="btn-cta primary" data-tour="quote-cta" disabled={finalizing || !orderable} onclick={confirmUpload}>
 						{#if finalizing}
 							<span class="btn-spinner"></span>Saving Your Design…
 						{:else if finalizedCurrent}
@@ -1910,7 +1943,7 @@
 						<p class="cta-hint">Online ordering for {process.title} is coming soon.</p>
 					{/if}
 				{:else}
-					<button class="btn-cta primary" disabled={!canQuote} onclick={getQuote}>
+					<button class="btn-cta primary" data-tour="quote-cta" disabled={!canQuote} onclick={getQuote}>
 						{#if quoting}
 							<span class="btn-spinner"></span>Slicing Your Model…
 						{:else}

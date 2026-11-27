@@ -38,6 +38,7 @@
 		<div class="header-right">
 			<a
 				class="shelf-link"
+				data-tour="shelf"
 				class:active={page.url.pathname.startsWith('/shelf')}
 				href="/shelf"
 				aria-label={`Shelf, ${shelf.count} ${shelf.count === 1 ? 'model' : 'models'}`}

@@ -580,6 +580,7 @@
 
 <div
 	class="viewer"
+	data-tour="viewer"
 	class:dragging
 	style:height
 	role="region"
@@ -599,7 +600,7 @@
 				<span class="chip">{bedLabel ?? `Bed: ${bed.x}×${bed.y}mm`}</span>
 			</div>
 
-			<div class="toolbar">
+			<div class="toolbar" data-tour="viewer-tools">
 				<div class="segmented" role="group" aria-label="Camera view">
 					{#each views as view (view.id)}
 						<button
