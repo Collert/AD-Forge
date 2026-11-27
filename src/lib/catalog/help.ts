@@ -39,7 +39,7 @@ export const settingHelp = {
 		title: 'Variant / Color',
 		body: [
 			'The color of the filament. Each color is a separate spool, so stock and occasionally price differ between colors.',
-			'Colors marked Backorder are not on hand; we order them from the manufacturer when you place your order, which can add a few days.'
+			'Colors that are not on hand are ordered in as soon as you place your order. They usually arrive in 1–2 business days, or 1–2 business days after the manufacturer restocks if they are out too; the arrival date is shown next to the color.'
 		]
 	},
 
@@ -222,7 +222,7 @@ export const settingHelp = {
 		title: 'Pigment',
 		body: [
 			'The color of the resin. Clear and translucent resins let light through; opaque ones show surface detail best.',
-			'Pigments marked as Backorder are ordered from the manufacturer when you place your order.'
+			'Pigments that are not on hand are ordered in as soon as you place your order, and usually arrive in 1–2 business days.'
 		]
 	},
 	resinLayer: {

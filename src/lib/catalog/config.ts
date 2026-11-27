@@ -61,8 +61,12 @@ export type ColorOption = {
 	hex: string;
 	/** $ per unit of the product (gram of filament, ml of resin). */
 	price: number;
-	/** On hand; otherwise orderable on backorder. */
+	/** On hand; otherwise ordered in when an order is placed. */
 	inStock: boolean;
+	/** When not on hand and the manufacturer is out too: their restock ETA, ISO date. */
+	restock?: string;
+	/** On hand but discontinued by the manufacturer: the spools left are the last. */
+	discontinued?: boolean;
 };
 
 /** An FDM filament (a Shopify product priced per gram). */

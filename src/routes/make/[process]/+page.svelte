@@ -31,6 +31,7 @@
 	import type { OrientationFit } from '$lib/viewer/orient';
 	import { identityTransform, type ModelTransform } from '$lib/viewer/transform';
 	import { pendingUpload } from '$lib/upload.svelte';
+	import { discontinuedNote, leadTime, type Availability } from '$lib/catalog/stock';
 	import {
 		axisModes,
 		compensationRange,
@@ -1501,12 +1502,12 @@
 							<div class="material-text">
 								<div class="material-name">
 									<span>{resin.name} — {pigment.name}</span>
-									<span class="stock" class:out={!resin.inStock}>{resin.inStock ? 'In Stock' : 'Backorder'}</span>
+									<span class="stock" class:out={!pigment.inStock}>{pigment.inStock ? 'In Stock' : 'Backorder'}</span>
 								</div>
 							</div>
 							<span class="per-gram">{money(resin.pricePerMl)}<small>/ml</small></span>
 						</div>
-						{#if !resin.inStock}{@render backorderNote()}{/if}
+						{#if !pigment.inStock}{@render backorderNote(pigment, 'printing')}{/if}
 
 						<div class="props">
 							{#each [['Tensile', resin.tensile], ['Elongation', resin.elongation], ['Heat Deflect', resin.heatDeflect]] as [label, value] (label)}
@@ -1603,7 +1604,7 @@
 							</div>
 							<span class="per-gram from-price"><small>From</small>{money(stockFromPrice)}</span>
 						</div>
-						{#if !stock.inStock}{@render backorderNote()}{/if}
+						{#if !stock.inStock}{@render backorderNote(stock, 'machining')}{/if}
 
 						<div class="seg" role="group" aria-label="Material type">
 							{#each catalog.stockGroups as g (g.id)}
@@ -2011,7 +2012,7 @@
 			<div class="material-text">
 				<div class="material-name">
 					<span>{material.name} — {color.name}</span>
-					<span class="stock" class:out={!material.inStock}>{material.inStock ? 'In Stock' : 'Backorder'}</span>
+					<span class="stock" class:out={!color.inStock}>{color.inStock ? 'In Stock' : 'Backorder'}</span>
 				</div>
 				<span class="code-sm">
 					{material.specs}{#if material.datasheetUrl}
@@ -2020,7 +2021,7 @@
 			</div>
 			<span class="per-gram">{money(material.pricePerGram)}<small>/g</small></span>
 		</div>
-		{#if !material.inStock}{@render backorderNote()}{/if}
+		{#if !color.inStock}{@render backorderNote(color, 'printing')}{:else if color.discontinued}{@render discontinuedNotice()}{/if}
 
 		<div class="field">
 			<span class="caps">Material Category<HelpButton key="materialCategory" /></span>
@@ -2056,10 +2057,18 @@
 	</div>
 {/snippet}
 
-{#snippet backorderNote()}
+{#snippet backorderNote(item: Availability, work: 'printing' | 'machining')}
+	{@const lead = leadTime(item)}
 	<p class="backorder-note" role="status">
 		<span class="material-symbols-outlined">local_shipping</span>
-		<span>We don't have this material on hand right now. If you place an order, we'll order it from the manufacturer, which may delay processing.</span>
+		<span>{lead.note?.replace('start printing', `start ${work}`)}</span>
+	</p>
+{/snippet}
+
+{#snippet discontinuedNotice()}
+	<p class="backorder-note" role="status">
+		<span class="material-symbols-outlined">inventory_2</span>
+		<span>{discontinuedNote}</span>
 	</p>
 {/snippet}
 

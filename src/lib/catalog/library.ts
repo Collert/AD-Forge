@@ -19,8 +19,10 @@ export type LibraryColor = {
 	/** $ per gram. */
 	price: number;
 	inStock: boolean;
-	/** When an out-of-stock colour should be on the shelf (supplier ETA + a few days), ISO date. */
-	arrives?: string;
+	/** When not on hand and the manufacturer is out too: their restock ETA, ISO date (see `leadTime`). */
+	restock?: string;
+	/** On hand but discontinued by the manufacturer: the spools left are the last. */
+	discontinued?: boolean;
 	/** Nozzle sizes (mm) the colour is approved for; unset allows every size. */
 	nozzles?: number[];
 	image?: LibraryImage;
@@ -175,9 +177,6 @@ export const ratingRows: { key: keyof Ratings; label: string; short: string; wor
 	{ key: 'flexibility', label: 'Flexibility', short: 'Flex', words: ['Rigid', 'Some', 'Moderate', 'Bendy', 'Rubbery'] },
 	{ key: 'finish', label: 'Surface finish', short: 'Finish', words: ['Rough', 'Plain', 'Good', 'Fine', 'Showpiece'] }
 ];
-
-/** Days a backordered spool takes from the supplier's ETA to our shelf. */
-export const shelfLagDays = 3;
 
 /** "0.2–0.8 mm", "0.4 mm", "Any". */
 export function nozzleRange(sizes: number[] | undefined) {

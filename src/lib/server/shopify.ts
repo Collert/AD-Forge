@@ -3,6 +3,8 @@
  * sells (filaments, resins and CNC stock) with the metafields it needs.
  */
 import { env } from '$env/dynamic/public';
+import { applyInventory } from './inventory';
+import { fetchSpoolmanInventory, spoolmanConfigured, type SpoolmanInventory } from './spoolman';
 
 const API_VERSION = '2026-07';
 
@@ -17,11 +19,14 @@ export type ShopifyVariant = {
 	title: string;
 	availableForSale: boolean;
 	quantityAvailable: number | null;
+	sku: string | null;
 	price: { amount: string };
 	selectedOptions: { name: string; value: string }[];
 	image: ShopifyImage | null;
 	/** In `VARIANT_METAFIELDS` order; null where unset. */
 	metafields: Metafield[];
+	/** Stock from Spoolman, when the variant matches a filament there (see `applyInventory`); overrides Shopify's. */
+	stock?: { inStock: boolean; restock?: string; discontinued: boolean };
 };
 
 export type ShopifyProduct = {
@@ -106,7 +111,7 @@ query Catalog($query: String!, $after: String) {
 			}
 			variants(first: 100) {
 				nodes {
-					id title availableForSale quantityAvailable
+					id title availableForSale quantityAvailable sku
 					price { amount }
 					selectedOptions { name value }
 					image { ${IMAGE_FIELDS} }
@@ -163,13 +168,31 @@ async function all<T>(query: string, key: string, variables: Record<string, unkn
 
 export type StoreData = { products: ShopifyProduct[]; collections: ShopifyCollection[]; fetchedAt: number };
 
-/** Filament, resin and CNC stock products, plus every collection (to find the filament categories). */
+/** The last Spoolman inventory that loaded, reused while Spoolman is unreachable. */
+let lastInventory: SpoolmanInventory | null = null;
+
+async function spoolmanInventory() {
+	if (!spoolmanConfigured()) return null;
+	try {
+		return (lastInventory = await fetchSpoolmanInventory());
+	} catch (err) {
+		console.error(`Spoolman unreachable; ${lastInventory ? 'using the last inventory' : 'using Shopify stock'}.`, err);
+		return lastInventory;
+	}
+}
+
+/**
+ * Filament, resin and CNC stock products, plus every collection (to find the
+ * filament categories), with filament stock from Spoolman when it's set up.
+ */
 async function fetchStoreData(): Promise<StoreData> {
 	const query = [PRINT_MATERIAL_TYPE, CNC_STOCK_TYPE].map((t) => `product_type:"${t}"`).join(' OR ');
-	const [products, collections] = await Promise.all([
+	const [products, collections, inventory] = await Promise.all([
 		all<ShopifyProduct>(PRODUCTS_QUERY, 'products', { query }),
-		all<ShopifyCollection>(COLLECTIONS_QUERY, 'collections')
+		all<ShopifyCollection>(COLLECTIONS_QUERY, 'collections'),
+		spoolmanInventory()
 	]);
+	if (inventory) applyInventory(products, inventory, (p) => p.productType === PRINT_MATERIAL_TYPE && !isResin(p));
 	return { products, collections, fetchedAt: Date.now() };
 }
 
@@ -204,6 +227,12 @@ export function fromStoreData<T>(build: (data: StoreData) => T): () => Promise<T
 		if (!built.has(data)) built.set(data, build(data));
 		return built.get(data)!;
 	};
+}
+
+/** Resins are priced per millilitre; filaments per gram. */
+export function isResin(product: ShopifyProduct) {
+	const uom = productFields(product).uom_abbreviation?.toLowerCase();
+	return uom ? uom === 'ml' : product.tags.includes('Resin');
 }
 
 /** Product metafields by key. */

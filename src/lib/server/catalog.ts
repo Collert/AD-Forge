@@ -23,6 +23,7 @@ import {
 	CNC_STOCK_TYPE,
 	PRINT_MATERIAL_TYPE,
 	fromStoreData,
+	isResin,
 	productFields,
 	variantFields,
 	type ShopifyCollection,
@@ -64,11 +65,7 @@ function buildCatalog({ products, collections, fetchedAt }: StoreData): Catalog 
 	};
 }
 
-/** Resins are priced per millilitre; filaments per gram. */
-export function isResin(product: ShopifyProduct) {
-	const uom = productFields(product).uom_abbreviation?.toLowerCase();
-	return uom ? uom === 'ml' : product.tags.includes('Resin');
-}
+export { isResin } from './shopify';
 
 // ---------- Filaments ----------
 
@@ -297,13 +294,32 @@ export function swatches(product: ShopifyProduct): ColorOption[] {
 			name: v.title === 'Default Title' ? 'Standard' : v.title,
 			hex: variantFields(v).color ?? FALLBACK_HEX,
 			price: Number(v.price.amount),
-			inStock: isInStock(v)
+			inStock: isInStock(v),
+			restock: restockOf(v),
+			discontinued: v.stock?.discontinued || undefined
 		}));
 }
 
-/** On hand (untracked inventory counts as on hand); orderable variants without stock are backorders. */
+/**
+ * On hand: Spoolman's stock when the variant is tracked there, else Shopify's
+ * (untracked inventory counts as on hand). Orderable variants without stock
+ * are ordered in when an order is placed.
+ */
 export function isInStock(variant: ShopifyVariant) {
+	if (variant.stock) return variant.stock.inStock;
 	return variant.quantityAvailable === null || variant.quantityAvailable > 0;
+}
+
+/**
+ * For a variant that isn't on hand, the manufacturer's restock ETA (ISO date)
+ * when they're out too: Spoolman's `next_restock_date`, else the variant's
+ * `custom.supplier_eta`. Undefined when the manufacturer has it.
+ */
+export function restockOf(variant: ShopifyVariant): string | undefined {
+	if (isInStock(variant)) return undefined;
+	if (variant.stock) return variant.stock.restock;
+	const eta = Date.parse(variantFields(variant).supplier_eta ?? '');
+	return Number.isFinite(eta) ? new Date(eta).toISOString().slice(0, 10) : undefined;
 }
 
 function minPrice(options: ColorOption[]) {

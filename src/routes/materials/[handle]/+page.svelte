@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { nozzles } from '$lib/catalog/config';
 	import { money, nozzleRange, ratingRows, type LibraryColor, type LibraryImage } from '$lib/catalog/library';
+	import { discontinuedNote, leadTime } from '$lib/catalog/stock';
 
 	let { data } = $props();
 	let m = $derived(data.material);
@@ -26,11 +27,9 @@
 		shownImage = null;
 	});
 
-	const dateFmt = new Intl.DateTimeFormat('en-CA', { month: 'short', day: 'numeric' });
 	function stock(c: LibraryColor) {
-		if (c.inStock) return 'On the shelf';
-		if (c.arrives) return `Arrives ~${dateFmt.format(new Date(`${c.arrives}T12:00:00`))}`;
-		return 'Ordered in for you';
+		if (c.inStock) return c.discontinued ? 'Last spools' : 'On the shelf';
+		return leadTime(c).badge;
 	}
 
 	/** Every quality's layer height across the nozzles this filament prints with. */
@@ -158,6 +157,8 @@
 						</div>
 					{/each}
 				</div>
+				{#if !picked.inStock}<p class="lead-note small" role="status">{leadTime(picked).note}</p>
+				{:else if picked.discontinued}<p class="lead-note small" role="status">{discontinuedNote}</p>{/if}
 				<a class="make" href={makeHref}>Make with {m.name} →</a>
 			</div>
 		</div>
@@ -206,7 +207,7 @@
 	<section class="panel colours">
 		<div class="colours-head">
 			<h2>Colours</h2>
-			<span class="small muted">Out-of-stock colours can still be ordered: we show when the spool arrives.</span>
+			<span class="small muted">Out-of-stock colours can still be ordered: we order the spool in and show when it arrives.</span>
 		</div>
 		{#each m.groups as g (g.name)}
 			{@const groupNozzles = [...new Set(g.colors.flatMap((c) => c.nozzles ?? []))]}
@@ -517,6 +518,14 @@
 
 	.stock.ok {
 		color: #00564f;
+	}
+
+	.lead-note {
+		margin: 0;
+		padding: 8px 12px;
+		border: 1px solid var(--warning-border);
+		border-radius: 8px;
+		background: var(--warning-tint);
 	}
 
 	.swatch-row {

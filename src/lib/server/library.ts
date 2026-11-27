@@ -6,14 +6,13 @@
  *   (title + description); resins and CNC stock are their product types.
  * - Filament cards: title, lowest variant price, SEO description, the
  *   `custom.rating_*` and `custom.molecule` metafields, variant colours.
- * - Detail page: variant options (type × colour), stock, `custom.supplier_eta`
- *   and `custom.approved_nozzles` per variant, the great-for / avoid / tips
+ * - Detail page: variant options (type × colour), stock and restock ETA
+ *   (Spoolman, else Shopify), `custom.approved_nozzles` per variant, the great-for / avoid / tips
  *   lists, the `custom.technical_data` metaobject, and the product photos,
  *   served and resized by Shopify's CDN.
  */
 import {
 	polymerLabel,
-	shelfLagDays,
 	stockLabel,
 	tagsFor,
 	usesFor,
@@ -28,7 +27,7 @@ import {
 	type Ratings
 } from '$lib/catalog/library';
 import { stockGroups } from '$lib/catalog/config';
-import { FALLBACK_HEX, approvedNozzles, isInStock, isResin, jsonList, num, technicalData } from './catalog';
+import { FALLBACK_HEX, approvedNozzles, isInStock, isResin, jsonList, num, restockOf, technicalData } from './catalog';
 import { stockMaterialTraits } from './material-traits';
 import {
 	CNC_STOCK_TYPE,
@@ -200,14 +199,14 @@ function colorGroups(product: ShopifyProduct): { groups: LibraryColorGroup[]; gr
 	for (const v of variants) {
 		const f = variantFields(v);
 		const option = (name: string | null | undefined) => (name ? v.selectedOptions.find((o) => o.name === name)?.value : undefined);
-		const inStock = isInStock(v);
 		const color: LibraryColor = {
 			id: v.id,
 			name: option(colorOption) ?? (v.title === 'Default Title' ? 'Standard' : v.title),
 			hex: f.color ?? FALLBACK_HEX,
 			price: Number(v.price.amount),
-			inStock,
-			arrives: inStock ? undefined : arrival(f.supplier_eta),
+			inStock: isInStock(v),
+			restock: restockOf(v),
+			discontinued: v.stock?.discontinued || undefined,
 			nozzles: approvedNozzles(f.approved_nozzles),
 			image: v.image ? image(v.image, `${product.title} ${v.title}`) : undefined
 		};
@@ -226,14 +225,6 @@ function printExamples(product: ShopifyProduct): LibraryImage[] {
 	const key = (url: string) => url.split('?')[0];
 	const colourShots = new Set(product.variants.nodes.flatMap((v) => (v.image ? [key(v.image.url)] : [])));
 	return product.images.nodes.filter((img) => !colourShots.has(key(img.url))).map((img) => image(img, `${product.title} print example`));
-}
-
-/** Supplier ETA plus the days it takes to reach our shelf (counted from today if the ETA has passed), ISO date. */
-function arrival(eta: string | undefined) {
-	const due = eta ? Date.parse(eta) : NaN;
-	if (!Number.isFinite(due)) return undefined;
-	const from = Math.max(due, Date.now());
-	return new Date(from + shelfLagDays * 86_400_000).toISOString().slice(0, 10);
 }
 
 /** Up to five swatches for a card, in stock first, spread across the range. */
