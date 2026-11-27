@@ -2,6 +2,8 @@
 	import '../app.css';
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
+	import { replaceState } from '$app/navigation';
+	import { initStaff } from '$lib/staff.svelte';
 	import favicon from '$lib/assets/favicon.svg';
 	import logo from '$lib/assets/logo-wide.svg';
 	import AccountButton from '$lib/components/AccountButton.svelte';
@@ -11,6 +13,14 @@
 	let { children, data } = $props();
 
 	onMount(watchShelfCount);
+	onMount(async () => {
+		// `?staff=<token>` is stored, then dropped from the address bar so it isn't shared or bookmarked.
+		if (await initStaff(page.url)) {
+			const url = new URL(page.url);
+			url.searchParams.delete('staff');
+			replaceState(url, page.state);
+		}
+	});
 </script>
 
 <svelte:head>

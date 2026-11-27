@@ -86,6 +86,7 @@
 	import { lowestUnitPrice, tierAmountOff, tierUnitPrice } from '$lib/pricing/tiers';
 	import { finalizeDesign, isOrderable, requestQuote, RequestError, type FinalizedDesign, type Quote } from '$lib/pricing/quote';
 	import { addToCart, cart, cartQuantity, markNewDesign } from '$lib/cart.svelte';
+	import { staff } from '$lib/staff.svelte';
 
 	let { data } = $props();
 
@@ -434,13 +435,18 @@
 	const CONFIRM_PARAM = 'confirm';
 
 	/** Design created from a quote (by quote id), so confirming twice reuses it. */
-	let finalized = $state.raw<{ quoteId: string; design: FinalizedDesign } | null>(null);
+	let finalized = $state.raw<{ quoteId: string; design: FinalizedDesign; ownerEmail: string } | null>(null);
 	let finalizing = $state(false);
 	let finalizeError = $state('');
 	let needsSignIn = $state(false);
 	let finalizedCurrent = $derived(quoteCurrent && finalized?.quoteId === quote!.result.id);
+	/** Staff mode: the customer whose library the design is saved to (blank: the staff member's own). */
+	let staffOwner = $state('');
+	let ownerEmail = $derived(staff.active ? staffOwner.trim().toLowerCase() : '');
+	/** Saved for someone else with the current quote. */
+	let savedForOwner = $derived(finalizedCurrent && !!finalized?.ownerEmail);
 	/** Signed in (or a guest the server accepts); otherwise Confirm signs in first. */
-	let canSave = $derived(data.canSave && !needsSignIn);
+	let canSave = $derived((data.canSave && !needsSignIn) || !!ownerEmail);
 	/** Quotes for this process can be ordered online. */
 	let orderable = $derived(isOrderable(process.kind));
 
@@ -481,6 +487,7 @@
 	async function confirmUpload() {
 		if (!quoteCurrent || finalizing || !orderable) return;
 		const quoteId = quote!.result.id;
+		const owner = ownerEmail;
 		finalizing = true;
 		finalizeError = '';
 		needsSignIn = false;
@@ -488,8 +495,10 @@
 			const design =
 				finalized?.quoteId === quoteId
 					? finalized.design
-					: await finalizeDesign(quoteId, partName.trim() || baseName(info!.name), (await viewerRef?.thumbnail()) ?? null);
-			finalized = { quoteId, design };
+					: await finalizeDesign(quoteId, partName.trim() || baseName(info!.name), (await viewerRef?.thumbnail()) ?? null, owner || undefined);
+			finalized = { quoteId, design, ownerEmail: owner };
+			// Saved for a customer: it's in their library; nothing goes in this browser's cart.
+			if (owner) return;
 			markNewDesign(design.variantId);
 			await addWhenListed(design.variantId);
 			if (partId) await deletePart(partId).catch((err) => console.error('Could not remove the finalized draft', err));
@@ -1926,7 +1935,21 @@
 					</p>
 				{/if}
 
-				{#if quoteCurrent && !canSave && !finalizedCurrent && orderable}
+				{#if staff.active && quoteCurrent && orderable && !finalizedCurrent}
+					<label class="staff-owner">
+						<span class="caps"><span class="material-symbols-outlined">badge</span>Staff: Save for Customer</span>
+						<span class="name-input">
+							<span class="material-symbols-outlined">mail</span>
+							<input type="email" bind:value={staffOwner} placeholder="customer@example.com (blank: your own library)" autocomplete="off" />
+						</span>
+					</label>
+				{/if}
+
+				{#if savedForOwner}
+					<p class="cta-hint staff-saved">
+						<span class="material-symbols-outlined">check_circle</span>Saved to <strong>{finalized!.ownerEmail}</strong>'s library.
+					</p>
+				{:else if quoteCurrent && !canSave && !finalizedCurrent && orderable}
 					<a class="btn-cta primary" data-tour="quote-cta" href={signInHref} onclick={signInToConfirm}>
 						<span class="material-symbols-outlined">login</span>Sign In &amp; Upload
 					</a>
@@ -1937,6 +1960,8 @@
 							<span class="btn-spinner"></span>Saving Your Design…
 						{:else if finalizedCurrent}
 							<span class="material-symbols-outlined">add_shopping_cart</span>Add Another to Cart
+						{:else if ownerEmail}
+							<span class="material-symbols-outlined">person_add</span>Save to Customer's Library
 						{:else}
 							<span class="material-symbols-outlined">add_shopping_cart</span>Confirm &amp; Upload
 						{/if}
@@ -3309,6 +3334,43 @@
 		line-height: 16px;
 		text-align: center;
 		color: var(--on-surface-variant);
+	}
+
+	.staff-owner {
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+		margin-top: var(--space-sm);
+	}
+
+	.staff-owner .caps {
+		display: flex;
+		align-items: center;
+		gap: 0.25rem;
+	}
+
+	.staff-owner .caps .material-symbols-outlined {
+		font-size: 14px;
+	}
+
+	.staff-owner .name-input input {
+		font-size: 14px;
+		font-weight: 500;
+	}
+
+	.staff-saved {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.25rem;
+		margin-top: var(--space-sm);
+		font-size: 12px;
+		color: var(--on-surface);
+	}
+
+	.staff-saved .material-symbols-outlined {
+		font-size: 16px;
+		color: var(--primary);
 	}
 
 	.btn-spinner {

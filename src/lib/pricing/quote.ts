@@ -1,3 +1,4 @@
+import { staffHeaders } from '$lib/staff.svelte';
 import type { ModelTransform } from '$lib/viewer/transform';
 import type { MachiningSettings, PrintCost, PrintSettings, ResinSettings } from './estimate';
 
@@ -63,19 +64,23 @@ export function isOrderable(kind: QuoteRequest['processKind']) {
 	return kind === 'extrusion' || kind === 'resin' || kind === 'machining';
 }
 
-/** Save a quoted part (its 3MF and a store product to order it through). Needs a signed-in customer. */
-export function finalizeDesign(quoteId: string, name: string, thumbnail: Blob | null): Promise<FinalizedDesign> {
+/**
+ * Save a quoted part (its 3MF and a store product to order it through). Needs a
+ * signed-in customer, or staff mode with `ownerEmail`: the customer it's saved for.
+ */
+export function finalizeDesign(quoteId: string, name: string, thumbnail: Blob | null, ownerEmail?: string): Promise<FinalizedDesign> {
 	const form = new FormData();
 	form.set('quoteId', quoteId);
 	form.set('name', name);
 	if (thumbnail) form.set('thumbnail', thumbnail, 'preview.png');
-	return post('/api/designs', form, "Couldn't save your design. Please try again.");
+	if (ownerEmail) form.set('ownerEmail', ownerEmail);
+	return post('/api/designs', form, "Couldn't save your design. Please try again.", ownerEmail ? staffHeaders() : {});
 }
 
-async function post<T>(url: string, body: FormData, fallbackMessage: string): Promise<T> {
+async function post<T>(url: string, body: FormData, fallbackMessage: string, headers: Record<string, string> = {}): Promise<T> {
 	let res: Response;
 	try {
-		res = await fetch(url, { method: 'POST', body });
+		res = await fetch(url, { method: 'POST', body, headers });
 	} catch {
 		throw new RequestError('Could not reach the server. Check your connection and try again.', 0);
 	}
