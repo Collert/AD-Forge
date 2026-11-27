@@ -103,7 +103,7 @@ async function compatible(vendor: string, kind: PresetKind, machine: string): Pr
 	return Promise.all(names.map((n) => flatten(vendor, n)));
 }
 
-/** "Bambu Lab X1 Carbon" + 0.4 → the flattened "Bambu Lab X1 Carbon 0.4 nozzle" machine preset. */
+/** "Bambu Lab H2C" + 0.4 → the flattened "Bambu Lab H2C 0.4 nozzle" machine preset. */
 export async function machinePreset(vendor: string, printer: string, nozzle: number): Promise<Preset> {
 	const name = `${printer} ${nozzle.toFixed(1)} nozzle`;
 	const preset = (await vendorIndex(vendor)).get(name);

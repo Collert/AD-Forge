@@ -9,7 +9,7 @@ import { randomUUID } from 'node:crypto';
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { env } from '$env/dynamic/private';
-import { axisModes, largeMeshTriangles, qualities, resinQualities, type QualityOption } from '$lib/catalog/config';
+import { axisModes, largeMeshTriangles, qualityAt, resinQualities, type QualityOption } from '$lib/catalog/config';
 import { createDesign, type DesignField } from './designs';
 import { dataDir, getQuote, type QuoteRecord } from './slicer/quotes';
 import { withPwscenePreview } from './slicer/pwscene';
@@ -97,7 +97,7 @@ function detailsOf(record: QuoteRecord): DesignField[] {
 	switch (record.kind) {
 		case 'extrusion':
 			return [
-				text('layer_height', qualityOf(qualities, record.settings.layerHeight)),
+				text('layer_height', qualityAt(record.settings.nozzle, record.settings.layerHeight)?.label ?? 'Standard'),
 				integer('infill_percentage', record.settings.infill),
 				text('nozzle_size', record.settings.nozzle.toFixed(1))
 			];

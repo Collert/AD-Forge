@@ -6,7 +6,7 @@
 # default is 18, so pin 24.
 NIXPACKS_NODE_VERSION = "24"
 # Keep in step with the OrcaSlicer you use on the desktop, so saved 3MF files open there cleanly.
-ORCA_VERSION = "2.4.2"
+ORCA_VERSION = "2.5.2"
 ORCA_SLICER_PATH = "/opt/orca/squashfs-root/AppRun"
 ORCA_PROFILES_DIR = "/opt/orca/squashfs-root/resources/profiles"
 # Mount a persistent volume here: quotes (24 h) and every finalized 3MF live under it.

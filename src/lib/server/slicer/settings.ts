@@ -10,6 +10,7 @@ import {
 	infillRange,
 	nozzles,
 	overhangRange,
+	layerHeightFor,
 	qualities,
 	shellCountRange,
 	supportPlacements,
@@ -43,9 +44,11 @@ export function parsePrintSettings(input: unknown, soluble: boolean): PrintSetti
 	};
 	const ids = (list: { id: string }[]) => list.map((o) => o.id);
 
+	const nozzle = oneOf('nozzle', nozzles.map((n) => n.size));
 	return {
-		layerHeight: oneOf('layerHeight', qualities.map((q) => q.layerHeight)),
-		nozzle: oneOf('nozzle', nozzles.map((n) => n.size)),
+		// Each nozzle has its own set of quality layer heights.
+		layerHeight: oneOf('layerHeight', qualities.map((q) => layerHeightFor(nozzle, q.id))),
+		nozzle,
 		wallLoops: oneOf('wallLoops', wallLoopOptions),
 		topShells: Math.round(number('topShells', shellCountRange)),
 		bottomShells: Math.round(number('bottomShells', shellCountRange)),

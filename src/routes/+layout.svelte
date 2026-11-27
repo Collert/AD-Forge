@@ -3,6 +3,7 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import favicon from '$lib/assets/favicon.svg';
+	import logo from '$lib/assets/logo-wide.svg';
 	import AccountButton from '$lib/components/AccountButton.svelte';
 	import CartDrawer from '$lib/components/CartDrawer.svelte';
 	import { shelf, watchShelfCount } from '$lib/storage/shelf.svelte';
@@ -14,6 +15,7 @@
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
+	<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 	<title>AD-Forge — Simple & Precision Making</title>
 </svelte:head>
 
@@ -21,9 +23,8 @@
 	<div class="header-inner">
 		<div class="header-left">
 			<a class="brand" href="/">
-				<div class="brand-mark">A</div>
 				<div class="brand-text">
-					<span class="brand-name">AD-Forge</span>
+					<img class="brand-logo" src={logo} alt="AD Forge" width="554" height="94" />
 					<span class="brand-tag">Custom Making Lab by ad-bits</span>
 				</div>
 			</a>
@@ -70,8 +71,7 @@
 <footer class="site-footer">
 	<div class="footer-inner">
 		<div class="footer-brand">
-			<div class="footer-mark">A</div>
-			<span class="brand-name">AD-Forge</span>
+			<img class="footer-logo" src={logo} alt="AD Forge" width="554" height="94" />
 			<span class="footer-sub">• Custom Making &amp; Print Lab</span>
 		</div>
 		<div class="footer-meta">
@@ -113,31 +113,15 @@
 		gap: var(--space-sm);
 	}
 
-	.brand-mark {
-		width: 2.25rem;
-		height: 2.25rem;
-		border-radius: var(--radius-lg);
-		background: var(--primary);
-		color: var(--on-primary);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		font-size: 20px;
-		font-weight: 700;
-		box-shadow: var(--shadow-sm);
-	}
-
 	.brand-text {
 		display: flex;
 		flex-direction: column;
 	}
 
-	.brand-name {
-		font-size: 16px;
-		line-height: 1;
-		font-weight: 700;
-		letter-spacing: -0.025em;
-		color: var(--on-surface);
+	.brand-logo {
+		display: block;
+		height: 1.75rem;
+		width: auto;
 	}
 
 	.brand-tag {
@@ -273,17 +257,10 @@
 		gap: var(--space-sm);
 	}
 
-	.footer-mark {
-		width: 1.5rem;
-		height: 1.5rem;
-		border-radius: 0.375rem;
-		background: var(--primary);
-		color: var(--on-primary);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		font-size: 12px;
-		font-weight: 700;
+	.footer-logo {
+		display: block;
+		height: 1.25rem;
+		width: auto;
 	}
 
 	.footer-sub,

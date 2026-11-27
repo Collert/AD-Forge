@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { qualities } from '$lib/catalog/config';
+	import { nozzles } from '$lib/catalog/config';
 	import { money, nozzleRange, ratingRows, type LibraryColor, type LibraryImage } from '$lib/catalog/library';
 
 	let { data } = $props();
@@ -33,10 +33,12 @@
 		return 'Ordered in for you';
 	}
 
-	const layerHeights = (() => {
-		const h = qualities.map((q) => q.layerHeight);
+	/** Every quality's layer height across the nozzles this filament prints with. */
+	let layerHeights = $derived.by(() => {
+		const allowed = nozzles.filter((n) => !m.nozzles || m.nozzles.includes(n.size));
+		const h = (allowed.length ? allowed : nozzles).flatMap((n) => Object.values(n.layers));
 		return `${Math.min(...h)}–${Math.max(...h)} mm`;
-	})();
+	});
 
 	let techRows = $derived(
 		[

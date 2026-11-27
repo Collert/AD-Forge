@@ -96,7 +96,15 @@ export type Material = {
 export type MaterialCategory = { id: string; label: string; materials: Material[] };
 export type QualityOption = { id: string; label: string; layerHeight: number; note: string };
 export type InfillPreset = { value: number; label: string };
-export type NozzleOption = { size: number; note: string };
+export type FdmQualityId = 'draft' | 'standard' | 'fine';
+/** An FDM quality; its layer height depends on the nozzle (see `NozzleOption.layers`). */
+export type FdmQualityOption = { id: FdmQualityId; label: string; note: string };
+export type NozzleOption = {
+	size: number;
+	note: string;
+	/** Layer height (mm) of each quality with this nozzle, as the slicer scales its presets to the nozzle. */
+	layers: Record<FdmQualityId, number>;
+};
 /** A volume tier: `amountOff` dollars off every unit (times the process's `tierScale`) from `minQty` units. */
 export type PriceTier = { label: string; minQty: number; amountOff: number };
 export type ChoiceOption = { id: string; label: string; note: string };
@@ -240,7 +248,7 @@ export type FuzzySkinMode = ChoiceOption & { timeFactor: number };
 export type NumberRange = { min: number; max: number; step: number };
 
 export const processes: Process[] = [
-	{ id: 'fdm', kind: 'extrusion', badge: 'FDM', title: 'FDM 3D Printing', subtitle: 'Rapid Engineering Grade', icon: 'layers', bed: { x: 330, y: 320, z: 325 }, bedLabel: 'Bed', enclosed: true, slicer: { vendor: 'BBL', printer: 'Bambu Lab X1 Carbon', plate: 'Textured PEI Plate' } },
+	{ id: 'fdm', kind: 'extrusion', badge: 'FDM', title: 'FDM 3D Printing', subtitle: 'Rapid Engineering Grade', icon: 'layers', bed: { x: 330, y: 320, z: 325 }, bedLabel: 'Bed', enclosed: true, slicer: { vendor: 'BBL', printer: 'Bambu Lab H2C', plate: 'Textured PEI Plate' } },
 	{ id: 'large-fdm', kind: 'extrusion', badge: 'Large FDM', title: 'Large-Scale FDM', subtitle: 'Build vol up to 450mm', icon: 'view_in_ar', bed: { x: 450, y: 450, z: 450 }, bedLabel: 'Bed', enclosed: false },
 	{ id: 'sla', kind: 'resin', badge: 'SLA', title: 'SLA Resin', subtitle: 'Ultra-smooth 25µm', icon: 'opacity', bed: { x: 150, y: 87, z: 160 }, bedLabel: 'Vat', minFeature: 0.3 },
 	{ id: 'cnc', kind: 'machining', badge: 'CNC', title: 'CNC Machining', subtitle: 'Metals, plastic & wood', icon: 'precision_manufacturing', bed: { x: 200, y: 200, z: 100 }, bedLabel: 'Envelope', minFeature: 1, tierScale: 2 },
@@ -276,10 +284,10 @@ export const processProfiles: Record<string, ProcessProfile> = {
 
 export const defaultProfile = fdmProfile;
 
-export const qualities: QualityOption[] = [
-	{ id: 'draft', label: 'Draft', layerHeight: 0.28, note: 'Speed Optimized' },
-	{ id: 'standard', label: 'Standard', layerHeight: 0.2, note: 'Recommended' },
-	{ id: 'fine', label: 'Fine', layerHeight: 0.12, note: 'Ultra Smooth' }
+export const qualities: FdmQualityOption[] = [
+	{ id: 'draft', label: 'Draft', note: 'Speed Optimized' },
+	{ id: 'standard', label: 'Standard', note: 'Recommended' },
+	{ id: 'fine', label: 'Fine', note: 'Ultra Smooth' }
 ];
 
 export const infillPresets: InfillPreset[] = [
@@ -292,11 +300,24 @@ export const infillPresets: InfillPreset[] = [
 export const infillRange = { min: 5, max: 100, step: 1 };
 
 export const nozzles: NozzleOption[] = [
-	{ size: 0.2, note: 'Fine Detail' },
-	{ size: 0.4, note: 'Standard' },
-	{ size: 0.6, note: 'Engineering' },
-	{ size: 0.8, note: 'Fast & Strong' }
+	// From OrcaSlicer's "@BBL H2C" process presets for each nozzle, all within the printer's
+	// min/max_layer_height for it (0.2: 0.04–0.14, 0.4: 0.08–0.28, 0.6: 0.12–0.42, 0.8: 0.16–0.56).
+	{ size: 0.2, note: 'Fine Detail', layers: { fine: 0.08, standard: 0.1, draft: 0.12 } },
+	{ size: 0.4, note: 'Standard', layers: { fine: 0.12, standard: 0.2, draft: 0.28 } },
+	{ size: 0.6, note: 'Engineering', layers: { fine: 0.18, standard: 0.3, draft: 0.42 } },
+	{ size: 0.8, note: 'Fast & Strong', layers: { fine: 0.24, standard: 0.4, draft: 0.56 } }
 ];
+
+/** The layer height a quality prints at with this nozzle (unknown ids print as Standard). */
+export function layerHeightFor(nozzle: number, qualityId: string): number {
+	const option = nozzles.find((n) => n.size === nozzle) ?? nozzles.find((n) => n.size === 0.4)!;
+	return option.layers[qualityId as FdmQualityId] ?? option.layers.standard;
+}
+
+/** The quality that prints this layer height with this nozzle, if any. */
+export function qualityAt(nozzle: number, layerHeight: number): FdmQualityOption | undefined {
+	return qualities.find((q) => layerHeightFor(nozzle, q.id) === layerHeight);
+}
 
 export const infillPatterns: InfillPattern[] = [
 	{ id: 'gyroid', label: 'Gyroid', note: 'Isotropic strength & flexibility', materialFactor: 1, speedFactor: 0.85 },

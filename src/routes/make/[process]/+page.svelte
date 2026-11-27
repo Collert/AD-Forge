@@ -48,6 +48,7 @@
 		infillPatterns,
 		infillPresets,
 		infillRange,
+		layerHeightFor,
 		nozzles,
 		overhangRange,
 		priceTiers,
@@ -159,7 +160,8 @@
 	/** The filament as priced and stocked in the chosen color. */
 	let material = $derived<Material>({ ...baseMaterial, pricePerGram: color.price, inStock: color.inStock });
 	let colorHex = $derived(color.hex);
-	let quality = $derived(qualities.find((q) => q.id === qualityId)!);
+	/** The chosen quality at the layer height it prints with the chosen nozzle. */
+	let quality = $derived({ ...byId(qualities, qualityId), layerHeight: layerHeightFor(fdm.nozzle, qualityId) });
 	/** Nozzle sizes the chosen filament is approved for. */
 	let allowedNozzles = $derived(material.nozzles ?? nozzles.map((n) => n.size));
 
@@ -1486,7 +1488,7 @@
 			</div>
 
 			{#if isResin}
-				<div class="knob">
+				<div class="knob" data-tour="resin">
 					<div class="knob-head">
 						<span class="knob-title"><span class="step">1</span>Photopolymer Resin<HelpButton key="resin" /></span>
 						<span class="hint">{catalog.resins.length} {plural(catalog.resins.length, 'Resin')}</span>
@@ -1538,7 +1540,7 @@
 					</div>
 				</div>
 
-				<div class="knob">
+				<div class="knob" data-tour="resin-layer">
 					<div class="knob-head">
 						<span class="knob-title"><span class="step">2</span>Layer Resolution (Z-Pitch)<HelpButton key="resinLayer" /></span>
 						<span class="hint">{Math.round(resinQuality.layerHeight * 1000)} µm</span>
@@ -1554,7 +1556,7 @@
 					</div>
 				</div>
 
-				<div class="knob">
+				<div class="knob" data-tour="resin-shell">
 					<div class="knob-head">
 						<span class="knob-title"><span class="step">3</span>Internal Shell<HelpButton key="resinShell" /></span>
 						{#if shell.hollow && hollowSaving > 0.01}
@@ -1571,7 +1573,7 @@
 					</span>
 				</div>
 
-				<div class="knob">
+				<div class="knob" data-tour="resin-post">
 					<div class="knob-head">
 						<span class="knob-title"><span class="step">4</span>Post-Wash &amp; UV Cure<HelpButton key="resinPost" /></span>
 						<span class="hint">Included</span>
@@ -2066,11 +2068,14 @@
 		{#each qualities as q (q.id)}
 			<button class="option" class:selected={qualityId === q.id} onclick={() => (qualityId = q.id)}>
 				<span class="option-title">{q.label}</span>
-				<span class="option-value">{q.layerHeight.toFixed(2)} mm</span>
+				<span class="option-value">{layerHeightFor(fdm.nozzle, q.id).toFixed(2)} mm</span>
 				<span class="option-note">{q.note}</span>
 			</button>
 		{/each}
 	</div>
+	{#if fdm.nozzle !== defaults.nozzle}
+		<span class="help">Layer heights are matched to the {fdm.nozzle.toFixed(1)} mm nozzle.</span>
+	{/if}
 {/snippet}
 
 {#snippet nozzlePicker()}
