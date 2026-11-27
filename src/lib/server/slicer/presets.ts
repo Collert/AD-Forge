@@ -46,7 +46,11 @@ async function readVendor(vendor: string): Promise<Index> {
 	try {
 		files = (await readdir(root, { recursive: true })).filter((f) => f.endsWith('.json'));
 	} catch (err) {
-		throw new SlicerError('Accurate quotes are unavailable right now.', 503, `No OrcaSlicer profiles at ${root}: ${(err as Error).message}`);
+		throw new SlicerError('Accurate quotes are unavailable right now.', 503, `No OrcaSlicer profiles at ${root} (run npm run orca:profiles): ${(err as Error).message}`);
+	}
+	if (files.length === 0) {
+		// OrcaSlicer 2.5+ installs pack presets into <vendor>.opc, leaving only images here.
+		throw new SlicerError('Accurate quotes are unavailable right now.', 503, `No JSON presets in ${root}; OrcaSlicer 2.5+ packs them as .opc. Run npm run orca:profiles.`);
 	}
 	const index: Index = new Map();
 	await Promise.all(

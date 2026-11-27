@@ -4,10 +4,13 @@
  * room for.
  *
  * ORCA_SLICER_PATH: the executable (default: the Windows install path, else
- * `orca-slicer` on PATH). ORCA_PROFILES_DIR: its bundled system presets
- * (default: resources/profiles next to the executable).
+ * `orca-slicer` on PATH). ORCA_PROFILES_DIR: the system presets as JSON
+ * (default: .orca/profiles from `npm run orca:profiles` if present, else
+ * resources/profiles next to the executable, which only OrcaSlicer 2.4 and
+ * older ship as JSON; 2.5 packs them into .opc files).
  */
 import { spawn } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import { availableParallelism } from 'node:os';
 import path from 'node:path';
 import { env } from '$env/dynamic/private';
@@ -21,8 +24,12 @@ export function orcaExe() {
 	return env.ORCA_SLICER_PATH || (process.platform === 'win32' ? WINDOWS_EXE : 'orca-slicer');
 }
 
+/** Presets fetched by `npm run orca:profiles`. */
+const FETCHED_PROFILES = path.resolve('.orca', 'profiles');
+
 export function orcaProfilesDir() {
-	return env.ORCA_PROFILES_DIR || path.join(path.dirname(orcaExe()), 'resources', 'profiles');
+	if (env.ORCA_PROFILES_DIR) return env.ORCA_PROFILES_DIR;
+	return existsSync(FETCHED_PROFILES) ? FETCHED_PROFILES : path.join(path.dirname(orcaExe()), 'resources', 'profiles');
 }
 
 /** A slicer failure; `message` is safe to show the customer. */

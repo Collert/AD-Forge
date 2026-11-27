@@ -8,7 +8,9 @@ NIXPACKS_NODE_VERSION = "24"
 # Keep in step with the OrcaSlicer you use on the desktop, so saved 3MF files open there cleanly.
 ORCA_VERSION = "2.5.2"
 ORCA_SLICER_PATH = "/opt/orca/squashfs-root/AppRun"
-ORCA_PROFILES_DIR = "/opt/orca/squashfs-root/resources/profiles"
+# OrcaSlicer 2.5+ packs its bundled presets into .opc files the quote server can't read,
+# so the orca phase fetches them as JSON from the same release (scripts/orca-profiles.mjs locally).
+ORCA_PROFILES_DIR = "/opt/orca/profiles"
 # Mount a persistent volume here: quotes (24 h) and every finalized 3MF live under it.
 DATA_DIR = "/app/data"
 # Largest request the server accepts (default 512K): quotes upload the STL, up to 100 MB.
@@ -23,6 +25,7 @@ nixpkgsArchive = "b6018f87da91d19d0ab4cf979885689b469cdd41"
 aptPkgs = [
 	"...",
 	"wget",
+	"git",
 	"ca-certificates",
 	"libgtk-3-0",
 	"libwebkit2gtk-4.1-0",
@@ -44,8 +47,12 @@ cmds = [
 	"chmod +x /opt/orca/OrcaSlicer.AppImage",
 	# Containers have no FUSE, so unpack the AppImage instead of mounting it.
 	"cd /opt/orca && ./OrcaSlicer.AppImage --appimage-extract > /dev/null && rm OrcaSlicer.AppImage",
-	# Fail the build here, not on the first customer quote, if the paths or libraries are wrong.
-	"test -x \"$ORCA_SLICER_PATH\" && test -d \"$ORCA_PROFILES_DIR/BBL\"",
+	# The presets as JSON (printers + the filament library they fall back to), from the release's source.
+	"git clone --quiet --depth 1 --branch v${ORCA_VERSION} --filter=blob:none --sparse https://github.com/OrcaSlicer/OrcaSlicer.git /tmp/orca-src",
+	"git -C /tmp/orca-src sparse-checkout set --no-cone /resources/profiles/BBL/ /resources/profiles/OrcaFilamentLibrary/",
+	"mv /tmp/orca-src/resources/profiles \"$ORCA_PROFILES_DIR\" && rm -rf /tmp/orca-src",
+	# Fail the build here, not on the first customer quote, if the paths, presets or libraries are wrong.
+	"test -x \"$ORCA_SLICER_PATH\" && ls \"$ORCA_PROFILES_DIR\"/BBL/machine/*.json > /dev/null",
 	# List every missing system library at once (if any) before the check below fails on the first.
 	"ldd /opt/orca/squashfs-root/bin/orca-slicer | grep 'not found' || true",
 	"\"$ORCA_SLICER_PATH\" --help > /dev/null"
